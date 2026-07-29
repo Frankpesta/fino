@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { fetchQuery } from "convex/nextjs";
 import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
 import { api } from "@/convex/_generated/api";
+import { AdminShell } from "@/components/admin-shell";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const token = await convexAuthNextjsToken();
@@ -11,5 +12,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect("/dashboard");
   }
 
-  return <>{children}</>;
+  return <AdminShell email={user.email}>{children}</AdminShell>;
 }

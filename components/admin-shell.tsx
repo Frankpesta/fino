@@ -7,7 +7,9 @@ import {
   LayoutDashboard,
   ArrowDownToLine,
   ArrowUpFromLine,
+  Users,
   TrendingUp,
+  Settings,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
@@ -16,15 +18,18 @@ import { useUiStore } from "@/lib/store";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/plans", label: "Plans", icon: TrendingUp },
-  { href: "/deposits", label: "Deposits", icon: ArrowDownToLine },
-  { href: "/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/deposits", label: "Deposits", icon: ArrowDownToLine },
+  { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine },
+  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/plans", label: "Plans", icon: TrendingUp },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
-export function AppShell({ email, children }: { email?: string; children: ReactNode }) {
+export function AdminShell({ email, children }: { email?: string; children: ReactNode }) {
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const pathname = usePathname();
@@ -39,8 +44,11 @@ export function AppShell({ email, children }: { email?: string; children: ReactN
       >
         <div className="flex h-14 items-center justify-between border-b px-4">
           {!collapsed && (
-            <Link href="/dashboard" className="font-heading text-lg font-semibold">
+            <Link href="/admin" className="flex items-center gap-2 font-heading text-lg font-semibold">
               Fino
+              <Badge variant="outline" className="text-[10px] font-normal">
+                Admin
+              </Badge>
             </Link>
           )}
           <Button
@@ -57,9 +65,7 @@ export function AppShell({ email, children }: { email?: string; children: ReactN
         <nav className="flex-1 space-y-1 p-3">
           {NAV_ITEMS.map((item) => {
             const active =
-              item.href === "/dashboard"
-                ? pathname === "/dashboard" || pathname.startsWith("/dashboard/investments")
-                : pathname.startsWith(item.href);
+              item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -83,7 +89,7 @@ export function AppShell({ email, children }: { email?: string; children: ReactN
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-14 items-center justify-between border-b px-4 sm:px-6">
-          <span className="font-heading text-lg font-semibold md:hidden">Fino</span>
+          <span className="font-heading text-lg font-semibold md:hidden">Fino Admin</span>
           <span className="hidden text-sm text-muted-foreground md:inline">{email}</span>
           <div className="flex items-center gap-2">
             <ThemeToggle />

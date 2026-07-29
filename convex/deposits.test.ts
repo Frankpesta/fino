@@ -26,6 +26,11 @@ async function seedUser(t: ReturnType<typeof convexTest>) {
   return { userId, asUser: t.withIdentity({ subject: userId }) };
 }
 
+async function seedAdmin(t: ReturnType<typeof convexTest>) {
+  const adminId = await t.run((ctx) => ctx.db.insert("users", baseUser({ role: "admin" })));
+  return { adminId, asAdmin: t.withIdentity({ subject: adminId }) };
+}
+
 describe("deposits.create", () => {
   it("throws when there is no active platform wallet for the currency", async () => {
     const t = convexTest(schema, modules);
@@ -192,5 +197,208 @@ describe("deposits.listMine", () => {
 
     const all = await asUser.query(api.deposits.listMine, {});
     expect(all).toHaveLength(2);
+  });
+});
+
+describe("deposits.approve", () => {
+  async function seedPendingDeposit(
+    t: ReturnType<typeof convexTest>,
+    userId: string,
+    amount = 100,
+  ) {
+    return await t.run((ctx) =>
+      ctx.db.insert("deposits", {
+        userId: userId as never,
+        amount,
+        currency: "USDT",
+        destinationWalletAddress: "T-x",
+        status: "pending",
+        createdAt: Date.now(),
+      }),
+    );
+  }
+
+  it("rejects a non-admin caller", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, asUser } = await seedUser(t);
+    const depositId = await seedPendingDeposit(t, userId);
+
+    await expect(asUser.mutation(api.deposits.approve, { depositId })).rejects.toThrow();
+  });
+
+  it("credits the depositor's balance, logs a transaction, and an audit row", async () => {
+    const t = convexTest(schema, modules);
+    const { userId } = await seedUser(t);
+    const { adminId, asAdmin } = await seedAdmin(t);
+    const depositId = await seedPendingDeposit(t, userId, 250);
+
+    await asAdmin.mutation(api.deposits.approve, { depositId });
+
+    const deposit = await t.run((ctx) => ctx.db.get(depositId));
+    expect(deposit?.status).toBe("approved");
+    expect(deposit?.reviewedBy).toBe(adminId);
+    expect(deposit?.reviewedAt).toBeDefined();
+
+    const user = await t.run((ctx) => ctx.db.get(userId));
+    expect(user?.balances.USDT).toBe(250);
+
+    const txs = await t.run((ctx) =>
+      ctx.db
+        .query("transactions")
+        .withIndex("by_userId", (q) => q.eq("userId", userId as never))
+        .collect(),
+    );
+    expect(txs).toHaveLength(1);
+    expect(txs[0].type).toBe("deposit");
+    expect(txs[0].balanceBefore).toBe(0);
+    expect(txs[0].balanceAfter).toBe(250);
+
+    const auditLog = await t.run((ctx) => ctx.db.query("adminAuditLog").collect());
+    expect(auditLog).toHaveLength(1);
+    expect(auditLog[0].action).toBe("approve_deposit");
+    expect(auditLog[0].adminId).toBe(adminId);
+  });
+
+  it("rejects approving a deposit that isn't pending", async () => {
+    const t = convexTest(schema, modules);
+    const { userId } = await seedUser(t);
+    const { asAdmin } = await seedAdmin(t);
+    const depositId = await t.run((ctx) =>
+      ctx.db.insert("deposits", {
+        userId: userId as never,
+        amount: 100,
+        currency: "USDT",
+        destinationWalletAddress: "T-x",
+        status: "approved",
+        createdAt: Date.now(),
+      }),
+    );
+
+    await expect(asAdmin.mutation(api.deposits.approve, { depositId })).rejects.toThrow();
+  });
+
+  it("credits the referrer's commission when the depositor was referred", async () => {
+    const t = convexTest(schema, modules);
+    const { userId: referrerId } = await seedUser(t);
+    const { userId: referredUserId } = await seedUser(t);
+    const { asAdmin } = await seedAdmin(t);
+
+    await t.run((ctx) =>
+      ctx.db.insert("referrals", {
+        referrerId: referrerId as never,
+        referredUserId: referredUserId as never,
+        commissionRate: 0.1,
+        totalCommissionEarned: 0,
+        createdAt: Date.now(),
+      }),
+    );
+    const depositId = await seedPendingDeposit(t, referredUserId, 1000);
+
+    await asAdmin.mutation(api.deposits.approve, { depositId });
+
+    const referrer = await t.run((ctx) => ctx.db.get(referrerId as never));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((referrer as any)?.balances.USDT).toBe(100); // 1000 * 0.1
+
+    const referral = await t.run((ctx) => ctx.db.query("referrals").first());
+    expect(referral?.totalCommissionEarned).toBe(100);
+
+    const referrerTxs = await t.run((ctx) =>
+      ctx.db
+        .query("transactions")
+        .withIndex("by_userId", (q) => q.eq("userId", referrerId as never))
+        .collect(),
+    );
+    expect(referrerTxs).toHaveLength(1);
+    expect(referrerTxs[0].type).toBe("referral_commission");
+    expect(referrerTxs[0].amount).toBe(100);
+  });
+
+  it("does not credit any commission when the depositor was not referred", async () => {
+    const t = convexTest(schema, modules);
+    const { userId } = await seedUser(t);
+    const { asAdmin } = await seedAdmin(t);
+    const depositId = await seedPendingDeposit(t, userId, 1000);
+
+    await asAdmin.mutation(api.deposits.approve, { depositId });
+
+    const allTxs = await t.run((ctx) => ctx.db.query("transactions").collect());
+    expect(allTxs).toHaveLength(1);
+    expect(allTxs[0].type).toBe("deposit");
+  });
+});
+
+describe("deposits.reject", () => {
+  it("rejects a non-admin caller", async () => {
+    const t = convexTest(schema, modules);
+    const { userId, asUser } = await seedUser(t);
+    const depositId = await t.run((ctx) =>
+      ctx.db.insert("deposits", {
+        userId: userId as never,
+        amount: 100,
+        currency: "USDT",
+        destinationWalletAddress: "T-x",
+        status: "pending",
+        createdAt: Date.now(),
+      }),
+    );
+
+    await expect(
+      asUser.mutation(api.deposits.reject, { depositId, rejectionReason: "bad" }),
+    ).rejects.toThrow();
+  });
+
+  it("requires a non-empty rejection reason", async () => {
+    const t = convexTest(schema, modules);
+    const { userId } = await seedUser(t);
+    const { asAdmin } = await seedAdmin(t);
+    const depositId = await t.run((ctx) =>
+      ctx.db.insert("deposits", {
+        userId: userId as never,
+        amount: 100,
+        currency: "USDT",
+        destinationWalletAddress: "T-x",
+        status: "pending",
+        createdAt: Date.now(),
+      }),
+    );
+
+    await expect(
+      asAdmin.mutation(api.deposits.reject, { depositId, rejectionReason: "  " }),
+    ).rejects.toThrow(/rejection reason/i);
+  });
+
+  it("sets status/reason and logs an audit row without touching balances", async () => {
+    const t = convexTest(schema, modules);
+    const { userId } = await seedUser(t);
+    const { adminId, asAdmin } = await seedAdmin(t);
+    const depositId = await t.run((ctx) =>
+      ctx.db.insert("deposits", {
+        userId: userId as never,
+        amount: 100,
+        currency: "USDT",
+        destinationWalletAddress: "T-x",
+        status: "pending",
+        createdAt: Date.now(),
+      }),
+    );
+
+    await asAdmin.mutation(api.deposits.reject, {
+      depositId,
+      rejectionReason: "Proof of payment does not match amount",
+    });
+
+    const deposit = await t.run((ctx) => ctx.db.get(depositId));
+    expect(deposit?.status).toBe("rejected");
+    expect(deposit?.rejectionReason).toBe("Proof of payment does not match amount");
+    expect(deposit?.reviewedBy).toBe(adminId);
+
+    const user = await t.run((ctx) => ctx.db.get(userId as never));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((user as any)?.balances.USDT).toBe(0);
+
+    const auditLog = await t.run((ctx) => ctx.db.query("adminAuditLog").collect());
+    expect(auditLog).toHaveLength(1);
+    expect(auditLog[0].action).toBe("reject_deposit");
   });
 });

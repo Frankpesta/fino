@@ -1,9 +1,11 @@
 import { v } from "convex/values";
-import { mutation, query, type QueryCtx } from "./_generated/server";
-import { requireVerifiedUser } from "./model/authz";
+import { mutation, query } from "./_generated/server";
+import { requireAdmin, requireVerifiedUser } from "./model/authz";
+import { logAdminAction } from "./model/audit";
 import { currencyValidator } from "./schema";
-import { addMoney, subtractMoney } from "../lib/money";
-import type { Doc, Id } from "./_generated/dataModel";
+import { getAvailableBalance as getAvailableBalanceHelper } from "./model/balances";
+import { getMinWithdrawalAmount } from "./model/settings";
+import { applyDelta } from "../lib/money";
 
 const withdrawalStatusValidator = v.union(
   v.literal("pending"),
@@ -11,25 +13,6 @@ const withdrawalStatusValidator = v.union(
   v.literal("rejected"),
   v.literal("cancelled"),
 );
-
-// Sum of this user's still-pending withdrawal requests for a currency --
-// funds reserved but not yet deducted from `users.balances` (that only
-// happens on admin approval, Phase 4). See docs/03-phase-2-user-dashboard.md
-// 2.3: "Do not decrement balance yet -- only reserve/hold it."
-async function heldForWithdrawal(
-  ctx: QueryCtx,
-  userId: Id<"users">,
-  currency: Doc<"withdrawals">["currency"],
-) {
-  const pending = await ctx.db
-    .query("withdrawals")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .filter((q) => q.eq(q.field("status"), "pending"))
-    .collect();
-  return pending
-    .filter((w) => w.currency === currency)
-    .reduce((sum, w) => addMoney(sum, w.amount), 0);
-}
 
 export const listMine = query({
   args: { status: v.optional(withdrawalStatusValidator) },
@@ -53,8 +36,7 @@ export const getAvailableBalance = query({
   args: { currency: currencyValidator },
   handler: async (ctx, args) => {
     const user = await requireVerifiedUser(ctx);
-    const held = await heldForWithdrawal(ctx, user._id, args.currency);
-    return subtractMoney(user.balances[args.currency], held);
+    return await getAvailableBalanceHelper(ctx, user, args.currency);
   },
 });
 
@@ -75,8 +57,12 @@ export const create = mutation({
       throw new Error("Destination address is required");
     }
 
-    const held = await heldForWithdrawal(ctx, user._id, args.currency);
-    const available = subtractMoney(user.balances[args.currency], held);
+    const minAmount = await getMinWithdrawalAmount(ctx, args.currency);
+    if (args.amount < minAmount) {
+      throw new Error(`Minimum withdrawal for ${args.currency} is ${minAmount}`);
+    }
+
+    const available = await getAvailableBalanceHelper(ctx, user, args.currency);
     if (args.amount > available) {
       throw new Error(
         `Amount exceeds available balance (${available} ${args.currency} available)`,
@@ -116,5 +102,149 @@ export const cancel = mutation({
     // flip status (soft-cancel keeps the audit trail, same pattern as
     // deposits).
     await ctx.db.patch(args.withdrawalId, { status: "cancelled" });
+  },
+});
+
+// --- Admin (Phase 4) ---
+
+export const listForAdmin = query({
+  args: { status: v.optional(withdrawalStatusValidator) },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const withdrawals = args.status
+      ? await ctx.db
+          .query("withdrawals")
+          .withIndex("by_status", (q) => q.eq("status", args.status!))
+          .order("desc")
+          .collect()
+      : await ctx.db.query("withdrawals").order("desc").collect();
+
+    return await Promise.all(
+      withdrawals.map(async (withdrawal) => {
+        const user = await ctx.db.get(withdrawal.userId);
+        return { ...withdrawal, userEmail: user?.email ?? "unknown" };
+      }),
+    );
+  },
+});
+
+// Approve re-validates the balance at approval time (not just whatever it
+// was at request time) -- other approvals, admin adjustments, or investments
+// could have changed it since. This is a hard money-safety check, not just
+// UX: approving twice or over-approving must be impossible.
+export const approve = mutation({
+  args: { withdrawalId: v.id("withdrawals"), payoutTxHash: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx);
+    const withdrawal = await ctx.db.get(args.withdrawalId);
+    if (!withdrawal) throw new Error("Withdrawal not found");
+    if (withdrawal.status !== "pending") {
+      throw new Error(`Cannot approve a withdrawal that is already ${withdrawal.status}`);
+    }
+
+    const user = await ctx.db.get(withdrawal.userId);
+    if (!user) throw new Error("User account not found");
+
+    const balanceBefore = user.balances[withdrawal.currency];
+    if (withdrawal.amount > balanceBefore) {
+      throw new Error(
+        `Balance no longer covers this withdrawal (current balance ${balanceBefore} ${withdrawal.currency})`,
+      );
+    }
+    const balanceAfter = applyDelta(balanceBefore, -withdrawal.amount);
+    await ctx.db.patch(user._id, {
+      balances: { ...user.balances, [withdrawal.currency]: balanceAfter },
+    });
+
+    const now = Date.now();
+    await ctx.db.patch(args.withdrawalId, {
+      status: "approved",
+      reviewedBy: admin._id,
+      reviewedAt: now,
+      payoutTxHash: args.payoutTxHash?.trim() || undefined,
+    });
+
+    await ctx.db.insert("transactions", {
+      userId: user._id,
+      type: "withdrawal",
+      amount: withdrawal.amount,
+      currency: withdrawal.currency,
+      balanceBefore,
+      balanceAfter,
+      relatedId: args.withdrawalId,
+      performedBy: admin._id,
+      note: "Withdrawal approved",
+      createdAt: now,
+    });
+
+    await logAdminAction(ctx, {
+      adminId: admin._id,
+      action: "approve_withdrawal",
+      targetTable: "withdrawals",
+      targetId: args.withdrawalId,
+      before: { status: "pending" },
+      after: { status: "approved" },
+    });
+  },
+});
+
+// This build doesn't broadcast on-chain transactions itself (see
+// docs/05-phase-4-admin-panel.md 4.3 scope note) -- the admin sends the
+// payout through their own custody tooling, then pastes the tx hash here,
+// often as a follow-up action after `approve`.
+export const recordPayoutTxHash = mutation({
+  args: { withdrawalId: v.id("withdrawals"), payoutTxHash: v.string() },
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx);
+    const withdrawal = await ctx.db.get(args.withdrawalId);
+    if (!withdrawal) throw new Error("Withdrawal not found");
+    if (withdrawal.status !== "approved") {
+      throw new Error("Can only record a payout tx hash on an approved withdrawal");
+    }
+    if (args.payoutTxHash.trim().length === 0) {
+      throw new Error("Tx hash cannot be empty");
+    }
+
+    await ctx.db.patch(args.withdrawalId, { payoutTxHash: args.payoutTxHash.trim() });
+    await logAdminAction(ctx, {
+      adminId: admin._id,
+      action: "record_payout_tx_hash",
+      targetTable: "withdrawals",
+      targetId: args.withdrawalId,
+      after: { payoutTxHash: args.payoutTxHash.trim() },
+    });
+  },
+});
+
+// Funds were never deducted on request, so rejecting is a pure status flip
+// -- nothing to reverse.
+export const reject = mutation({
+  args: { withdrawalId: v.id("withdrawals"), rejectionReason: v.string() },
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx);
+    const withdrawal = await ctx.db.get(args.withdrawalId);
+    if (!withdrawal) throw new Error("Withdrawal not found");
+    if (withdrawal.status !== "pending") {
+      throw new Error(`Cannot reject a withdrawal that is already ${withdrawal.status}`);
+    }
+    if (args.rejectionReason.trim().length === 0) {
+      throw new Error("A rejection reason is required");
+    }
+
+    await ctx.db.patch(args.withdrawalId, {
+      status: "rejected",
+      reviewedBy: admin._id,
+      reviewedAt: Date.now(),
+      rejectionReason: args.rejectionReason.trim(),
+    });
+
+    await logAdminAction(ctx, {
+      adminId: admin._id,
+      action: "reject_withdrawal",
+      targetTable: "withdrawals",
+      targetId: args.withdrawalId,
+      before: { status: "pending" },
+      after: { status: "rejected", rejectionReason: args.rejectionReason.trim() },
+    });
   },
 });

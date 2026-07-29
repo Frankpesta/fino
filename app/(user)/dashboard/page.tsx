@@ -9,6 +9,7 @@ import { CurrencyIcon } from "@/components/ui/currency-icon";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { CURRENCIES, type Currency } from "@/lib/currency";
 import { ArrowDownToLine, ArrowUpFromLine, TrendingUp } from "lucide-react";
 
@@ -40,6 +41,8 @@ const TX_TYPE_LABEL: Record<string, string> = {
 export default function DashboardPage() {
   const stats = useQuery(api.dashboard.getStats);
   const activity = useQuery(api.transactions.listRecent, { limit: 8 });
+  const investments = useQuery(api.investments.listMine);
+  const activeInvestments = investments?.filter((inv) => inv.status === "active") ?? [];
 
   return (
     <div className="space-y-8">
@@ -114,7 +117,39 @@ export default function DashboardPage() {
           variant="outline"
           render={<Link href="/withdrawals/new"><ArrowUpFromLine />Request withdrawal</Link>}
         />
+        <Button variant="outline" render={<Link href="/dashboard/plans"><TrendingUp />View plans</Link>} />
       </div>
+
+      {activeInvestments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-medium">Active investments</CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            {activeInvestments.map((inv) => (
+              <Link
+                key={inv._id}
+                href={`/dashboard/investments/${inv._id}`}
+                className="flex items-center justify-between py-3 text-sm transition-colors hover:bg-muted/40"
+              >
+                <div className="flex items-center gap-3">
+                  <CurrencyIcon currency={inv.currency as Currency} />
+                  <div>
+                    <p className="font-medium">
+                      <AmountDisplay amount={inv.principal} currency={inv.currency as Currency} />
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {(inv.rate * 100).toFixed(2)}% / {inv.rateInterval.replace("ly", "")} · ends{" "}
+                      {new Date(inv.endsAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <StatusBadge status={inv.status} />
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
