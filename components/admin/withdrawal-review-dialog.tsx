@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation } from "convex/react";
+import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import {
@@ -46,9 +47,12 @@ export function WithdrawalReviewDialog({
     setIsSubmitting(true);
     try {
       await approve({ withdrawalId: withdrawal._id });
+      toast.success("Withdrawal approved", { description: `${withdrawal.userEmail}'s balance was deducted.` });
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+      toast.error("Couldn't approve withdrawal", { description: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -63,9 +67,12 @@ export function WithdrawalReviewDialog({
     setIsSubmitting(true);
     try {
       await reject({ withdrawalId: withdrawal._id, rejectionReason: rejectionReason.trim() });
+      toast.success("Withdrawal rejected");
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+      toast.error("Couldn't reject withdrawal", { description: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -76,9 +83,12 @@ export function WithdrawalReviewDialog({
     setIsSubmitting(true);
     try {
       await recordPayoutTxHash({ withdrawalId: withdrawal._id, payoutTxHash });
+      toast.success("Payout tx hash saved");
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+      toast.error("Couldn't save tx hash", { description: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -120,7 +130,7 @@ export function WithdrawalReviewDialog({
             <Label htmlFor="payout-tx-hash">
               Payout tx hash{" "}
               <span className="text-xs text-muted-foreground">
-                (paste after sending funds externally -- this system doesn't broadcast payouts
+                (paste after sending funds externally -- this system doesn&apos;t broadcast payouts
                 itself)
               </span>
             </Label>

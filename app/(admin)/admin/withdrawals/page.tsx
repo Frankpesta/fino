@@ -87,7 +87,7 @@ export default function AdminWithdrawalsPage() {
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">Withdrawals</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Approval re-checks the user's current balance and deducts it. Payouts are sent through
+          Approval re-checks the user&apos;s current balance and deducts it. Payouts are sent through
           your own custody tooling -- this system only records the tx hash.
         </p>
       </div>

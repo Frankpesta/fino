@@ -71,9 +71,9 @@ export default function AdminPlansPage() {
                 <dl className="grid grid-cols-2 gap-y-1 text-xs">
                   <dt className="text-muted-foreground">Currency</dt>
                   <dd>{plan.currency}</dd>
-                  <dt className="text-muted-foreground">Min / Max</dt>
+                  <dt className="text-muted-foreground">Min / Max (USD)</dt>
                   <dd>
-                    {plan.minDeposit} / {plan.maxDeposit ?? "—"}
+                    ${plan.minDepositUsd} / {plan.maxDepositUsd ? `$${plan.maxDepositUsd}` : "—"}
                   </dd>
                   <dt className="text-muted-foreground">Duration</dt>
                   <dd>{plan.durationDays}d</dd>

@@ -1,83 +1,25 @@
 "use client";
 
-import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { ArrowUpRight, Check, ShieldCheck, ScanLine, ChartNoAxesCombined, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { AUTH_IMAGES } from "@/lib/authImages";
+import { SiteHeader } from "@/components/marketing/site-header";
+import { SiteFooter } from "@/components/marketing/site-footer";
+import { TestimonialsSection } from "@/components/marketing/testimonials-section";
+import { Skeleton } from "@/components/ui/skeleton";
+import { MARKETING_IMAGES } from "@/lib/authImages";
 
-gsap.registerPlugin(useGSAP);
+const PRINCIPLES = [{ icon: ScanLine, title: "Terms in plain sight", text: "Review the target rate, term, and payout style before you make a decision." }, { icon: ShieldCheck, title: "Deliberate movement", text: "Every deposit and withdrawal is reviewed before it affects your account." }, { icon: ChartNoAxesCombined, title: "A readable record", text: "Follow balances, investments, and activity from a single live dashboard." }];
 
 export default function MarketingHomePage() {
-  const heroRef = useRef<HTMLDivElement>(null);
-
-  useGSAP(() => {
-    gsap.fromTo(
-      heroRef.current?.querySelectorAll("[data-animate]") ?? [],
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.8, stagger: 0.12, ease: "power3.out", delay: 0.1 },
-    );
-  }, []);
-
-  return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-black">
-      <div className="absolute inset-0">
-        <Image
-          src={AUTH_IMAGES.signIn.src}
-          alt=""
-          fill
-          priority
-          className="object-cover opacity-40"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black" />
-      </div>
-
-      <header className="relative z-10 flex items-center justify-between p-6 sm:p-8">
-        <span className="font-heading text-lg font-semibold text-white">Fino</span>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Button
-            variant="ghost"
-            className="text-white hover:bg-white/10 hover:text-white"
-            render={<Link href="/sign-in">Sign in</Link>}
-          />
-          <Button render={<Link href="/sign-up">Sign up</Link>} />
-        </div>
-      </header>
-
-      <main
-        ref={heroRef}
-        className="relative z-10 flex flex-1 flex-col items-center justify-center gap-7 p-6 text-center"
-      >
-        <p
-          data-animate
-          className="text-xs font-medium uppercase tracking-[0.3em] text-primary"
-        >
-          A private trading desk for digital assets
-        </p>
-        <h1
-          data-animate
-          className="max-w-3xl font-heading text-5xl leading-tight font-semibold tracking-tight text-white sm:text-6xl"
-        >
-          Capital deserves the same discipline as the trades it funds.
-        </h1>
-        <p data-animate className="max-w-xl text-balance text-white/70">
-          Deposit, invest in a plan, and track accrual in real time. Every plan shows a target
-          rate, not a guarantee — returns depend on trading performance.
-        </p>
-        <div data-animate className="flex gap-3 pt-2">
-          <Button size="lg" render={<Link href="/sign-up">Open an account</Link>} />
-          <Button
-            size="lg"
-            variant="outline"
-            className="border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
-            render={<Link href="/sign-in">Sign in</Link>}
-          />
-        </div>
-      </main>
-    </div>
-  );
+  const plans = useQuery(api.investmentPlans.listPublic);
+  return <div className="flex min-h-screen flex-col"><SiteHeader transparent />
+    <main className="flex-1"><section className="relative isolate overflow-hidden bg-ink text-white"><Image src={MARKETING_IMAGES.home} alt="Illuminated city skyline at night" fill priority sizes="100vw" className="-z-20 object-cover opacity-35" /><div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,oklch(0.11_0.02_155_/_0.96)_0%,oklch(0.11_0.02_155_/_0.75)_48%,oklch(0.11_0.02_155_/_0.38)_100%)]" /><div className="mx-auto grid min-h-[720px] max-w-6xl items-end gap-10 px-6 pb-16 pt-32 sm:pb-20 lg:grid-cols-[1.1fr_.9fr]"><div><p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">Private digital-asset strategies</p><h1 className="mt-5 max-w-3xl font-heading text-5xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">Move with the market. Keep your footing.</h1><p className="mt-6 max-w-xl text-lg leading-8 text-white/65">Fino brings curated investment plans, visible terms, and a dependable account experience into one composed place.</p><div className="mt-9 flex flex-wrap gap-3"><Button size="lg" render={<Link href="/sign-up">Open an account <ArrowUpRight /></Link>} /><Button size="lg" variant="outline" className="border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white" render={<Link href="/about">Our approach</Link>} /></div></div><div className="rounded-3xl border border-white/15 bg-white/8 p-6 backdrop-blur-xl lg:mb-2"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/45">Designed around the details</p><div className="mt-6 space-y-5">{["Target terms displayed upfront", "Manual review for funds movement", "Live activity and ledger visibility"].map((item) => <div key={item} className="flex gap-3 text-sm text-white/80"><span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="size-3" /></span>{item}</div>)}</div></div></div></section>
+    <section className="mx-auto max-w-6xl px-6 py-20"><div className="max-w-2xl"><p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">A calmer operating model</p><h2 className="mt-3 font-heading text-4xl font-semibold tracking-tight">Built to make investment mechanics easier to follow.</h2></div><div className="mt-12 grid gap-5 lg:grid-cols-3">{PRINCIPLES.map(({ icon: Icon, title, text }) => <article key={title} className="rounded-2xl border bg-card p-7 shadow-sm"><div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="size-5" /></div><h3 className="mt-5 font-heading text-lg font-semibold">{title}</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">{text}</p></article>)}</div></section>
+    <section className="border-y border-border bg-muted/40 px-6 py-20"><div className="mx-auto max-w-6xl"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Available strategies</p><h2 className="mt-3 font-heading text-4xl font-semibold tracking-tight">Choose a plan with your eyes open.</h2></div><Button variant="outline" render={<Link href="/faqs">Read how plans work</Link>} /></div><div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{plans === undefined ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-80 rounded-2xl" />) : plans.length === 0 ? <p className="py-10 text-muted-foreground">New plans are being prepared. Create an account to stay in the loop.</p> : plans.map((plan) => <article key={plan._id} className="flex min-h-80 flex-col rounded-2xl border bg-card p-7 shadow-sm"><div className="flex items-start justify-between"><h3 className="font-heading text-xl font-semibold">{plan.name}</h3><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{plan.currency}</span></div><p className="mt-3 text-sm leading-6 text-muted-foreground">{plan.description}</p><div className="mt-7 border-y py-5"><p className="font-heading text-4xl font-semibold">{(plan.rate * 100).toFixed(2)}%</p><p className="mt-1 text-xs text-muted-foreground">Target rate / {plan.rateInterval.replace("ly", "")}</p></div><div className="mt-5 flex flex-1 items-end justify-between text-sm"><span className="text-muted-foreground">From ${plan.minDepositUsd}</span><span>{plan.durationDays} days</span></div><p className="mt-5 flex gap-2 text-xs leading-5 text-muted-foreground"><AlertTriangle className="size-3.5 shrink-0 text-primary" />Target rates are not guaranteed.</p><Button className="mt-5 w-full" render={<Link href="/sign-up">Explore this plan</Link>} /></article>)}</div></div></section>
+    <TestimonialsSection />
+    <section className="mx-auto max-w-4xl px-6 py-24 text-center"><p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Start deliberately</p><h2 className="mt-3 font-heading text-4xl font-semibold tracking-tight">An account with less noise and more clarity.</h2><p className="mx-auto mt-5 max-w-xl text-muted-foreground">Open your account, verify your email, and explore the current investment terms before you fund anything.</p><Button size="lg" className="mt-8" render={<Link href="/sign-up">Create your account <ArrowUpRight /></Link>} /></section></main><SiteFooter /></div>;
 }

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Convex regenerates these API bindings; they are not application source.
+    "convex/_generated/**",
   ]),
 ]);
 

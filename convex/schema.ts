@@ -24,6 +24,29 @@ const balancesValidator = v.object({
   BNB: v.number(),
 });
 
+// Per-event-type email toggles (docs/06-phase-5-referrals-profile.md 5.2).
+// Security-critical emails (verification, password/2FA changes) always send
+// regardless of these -- see docs/07-phase-6-emails-notifications.md 6.3.
+export const notificationPreferencesValidator = v.object({
+  depositApproved: v.boolean(),
+  depositRejected: v.boolean(),
+  withdrawalApproved: v.boolean(),
+  withdrawalRejected: v.boolean(),
+  investmentMatured: v.boolean(),
+  referralCommissionEarned: v.boolean(),
+});
+
+export function defaultNotificationPreferences() {
+  return {
+    depositApproved: true,
+    depositRejected: true,
+    withdrawalApproved: true,
+    withdrawalRejected: true,
+    investmentMatured: true,
+    referralCommissionEarned: true,
+  };
+}
+
 export default defineSchema({
   // authTables provides Convex Auth's own users/sessions/accounts tables.
   // We extend the "users" table below with our own app-specific fields instead
@@ -44,6 +67,13 @@ export default defineSchema({
     referralCode: v.string(),
     balances: balancesValidator,
     twoFactorEnabled: v.boolean(),
+    // AES-GCM encrypted TOTP secret (see lib/secretBox.ts + convex/model/
+    // secrets.ts) -- never stored in plaintext. Set once setup begins;
+    // twoFactorEnabled only flips true after the user verifies a code
+    // against it (see convex/profile.ts).
+    twoFactorSecret: v.optional(v.string()),
+    notificationPreferences: v.optional(notificationPreferencesValidator),
+    deletionRequestedAt: v.optional(v.number()),
     createdAt: v.number(),
     lastLoginAt: v.number(),
   })
@@ -61,11 +91,35 @@ export default defineSchema({
     .index("by_userId", ["userId"])
     .index("by_code", ["code"]),
 
+  passwordResets: defineTable({
+    userId: v.id("users"),
+    code: v.string(),
+    expiresAt: v.number(),
+    consumedAt: v.optional(v.number()),
+    lastSentAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_code", ["code"]),
+
+  // Rate limits 2FA code guesses at sign-in. Password attempts against the
+  // same account are already rate-limited by Convex Auth itself
+  // (retrieveAccount -> authRateLimits, 10/hour, token-bucket) -- this
+  // mirrors that same shape for the 2FA step, which is our own custom logic
+  // and isn't covered by that built-in mechanism.
+  twoFactorAttempts: defineTable({
+    userId: v.id("users"),
+    attemptsLeft: v.number(),
+    lastAttemptTime: v.number(),
+  }).index("by_userId", ["userId"]),
+
   investmentPlans: defineTable({
     name: v.string(),
     description: v.string(),
-    minDeposit: v.number(),
-    maxDeposit: v.optional(v.number()),
+    // USD-denominated tiers -- a deposit's live USD value is what selects a
+    // plan (see lib/planMatching.ts), independent of which coin is used, so
+    // thresholds live in USD rather than in the plan's own currency.
+    minDepositUsd: v.number(),
+    maxDepositUsd: v.optional(v.number()),
     currency: v.union(currencyValidator, v.literal("ANY")),
     rate: v.number(),
     rateInterval: v.union(
@@ -111,8 +165,19 @@ export default defineSchema({
 
   deposits: defineTable({
     userId: v.id("users"),
+    // The native-currency amount actually expected on-chain -- always
+    // `amountUsd / quotedRate` computed server-side at submission time, in
+    // the same fixed 8-decimal precision as every other ledger amount. This
+    // is what's credited to the user's balance on approval; never a raw
+    // client-supplied number.
     amount: v.number(),
     currency: currencyValidator,
+    // What the user actually typed and what plan-matching runs against
+    // (see lib/planMatching.ts). Informational + matching only -- balances
+    // stay denominated in native currency, never in USD.
+    amountUsd: v.number(),
+    quotedRate: v.number(),
+    matchedPlanId: v.optional(v.id("investmentPlans")),
     destinationWalletAddress: v.string(),
     proofFileId: v.optional(v.id("_storage")),
     txHash: v.optional(v.string()),
@@ -177,7 +242,11 @@ export default defineSchema({
     referrerId: v.id("users"),
     referredUserId: v.id("users"),
     commissionRate: v.number(),
-    totalCommissionEarned: v.number(),
+    // Per-currency, not a single summed number -- a referred user's
+    // deposits can be in different assets across time, and there's no price
+    // oracle in this build to combine them honestly (same reasoning as
+    // convex/dashboard.ts).
+    totalCommissionEarned: balancesValidator,
     createdAt: v.number(),
   })
     .index("by_referrerId", ["referrerId"])
@@ -226,4 +295,27 @@ export default defineSchema({
     key: v.string(),
     value: v.any(),
   }).index("by_key", ["key"]),
+
+  // Cached USD price per unit of each currency, refreshed on a cron (see
+  // convex/exchangeRates.ts). A single row per currency, upserted in place --
+  // reads always come from this cache, never a live external call, so
+  // interactive flows (deposit quoting, dashboard totals) stay fast and
+  // don't depend on a third party being up.
+  exchangeRates: defineTable({
+    currency: currencyValidator,
+    usdRate: v.number(),
+    updatedAt: v.number(),
+  }).index("by_currency", ["currency"]),
+
+  // Marketing-site "Contact us" form submissions -- public/unauthenticated
+  // writes (see convex/contact.ts), so treated as untrusted input: length
+  // capped, no HTML rendering, admin notified by email rather than
+  // relying on anyone actively checking this table.
+  contactMessages: defineTable({
+    name: v.string(),
+    email: v.string(),
+    subject: v.string(),
+    message: v.string(),
+    createdAt: v.number(),
+  }).index("by_createdAt", ["createdAt"]),
 });

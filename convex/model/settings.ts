@@ -23,3 +23,11 @@ export async function getMinWithdrawalAmount(
     defaultMinWithdrawalAmount();
   return perCurrency[currency] ?? 0;
 }
+
+export async function getReferralCommissionRateDefault(ctx: QueryCtx): Promise<number> {
+  const row = await ctx.db
+    .query("platformSettings")
+    .withIndex("by_key", (q) => q.eq("key", SETTINGS_KEYS.referralCommissionRateDefault))
+    .unique();
+  return (row?.value as number | undefined) ?? 0;
+}

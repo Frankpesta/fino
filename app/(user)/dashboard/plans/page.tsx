@@ -56,11 +56,11 @@ export default function PlansPage() {
                   <dt className="text-muted-foreground">Currency</dt>
                   <dd>{plan.currency}</dd>
                   <dt className="text-muted-foreground">Min deposit</dt>
-                  <dd>{plan.minDeposit}</dd>
-                  {plan.maxDeposit !== undefined && (
+                  <dd>${plan.minDepositUsd}</dd>
+                  {plan.maxDepositUsd !== undefined && (
                     <>
                       <dt className="text-muted-foreground">Max deposit</dt>
-                      <dd>{plan.maxDeposit}</dd>
+                      <dd>${plan.maxDepositUsd}</dd>
                     </>
                   )}
                   <dt className="text-muted-foreground">Duration</dt>

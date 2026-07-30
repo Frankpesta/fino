@@ -31,13 +31,51 @@ async function seedAdmin(t: ReturnType<typeof convexTest>) {
   return { adminId, asAdmin: t.withIdentity({ subject: adminId }) };
 }
 
+async function seedExchangeRate(
+  t: ReturnType<typeof convexTest>,
+  currency: "BTC" | "ETH" | "USDT" | "USDC" | "BNB" = "USDT",
+  usdRate = 1,
+) {
+  await t.run((ctx) =>
+    ctx.db.insert("exchangeRates", { currency, usdRate, updatedAt: Date.now() }),
+  );
+}
+
+async function seedActivePlan(
+  t: ReturnType<typeof convexTest>,
+  createdBy: string,
+  overrides: Partial<Record<string, unknown>> = {},
+) {
+  return await t.run((ctx) =>
+    ctx.db.insert("investmentPlans", {
+      name: "Plan",
+      description: "d",
+      minDepositUsd: 0,
+      currency: "ANY",
+      rate: 0.05,
+      rateInterval: "weekly",
+      durationDays: 14,
+      payoutStyle: "accrual",
+      isActive: true,
+      sortOrder: 0,
+      createdBy: createdBy as never,
+      createdAt: Date.now(),
+      ...overrides,
+    }),
+  );
+}
+
 describe("deposits.create", () => {
   it("throws when there is no active platform wallet for the currency", async () => {
     const t = convexTest(schema, modules);
     const { asUser } = await seedUser(t);
 
     await expect(
-      asUser.mutation(api.deposits.create, { amount: 100, currency: "USDT" }),
+      asUser.mutation(api.deposits.create, {
+        amountUsd: 100,
+        currency: "USDT",
+        txHash: "0xabc",
+      }),
     ).rejects.toThrow(/no active deposit address/i);
   });
 
@@ -54,13 +92,18 @@ describe("deposits.create", () => {
     );
 
     await expect(
-      asUser.mutation(api.deposits.create, { amount: 0, currency: "USDT" }),
+      asUser.mutation(api.deposits.create, {
+        amountUsd: 0,
+        currency: "USDT",
+        txHash: "0xabc",
+      }),
     ).rejects.toThrow(/greater than zero/i);
   });
 
   it("uses the server-side platform wallet address, never a client-supplied one, and never touches balances", async () => {
     const t = convexTest(schema, modules);
     const { userId, asUser } = await seedUser(t);
+    const { adminId } = await seedAdmin(t);
     await t.run((ctx) =>
       ctx.db.insert("platformWallets", {
         currency: "USDT",
@@ -69,10 +112,13 @@ describe("deposits.create", () => {
         isActive: true,
       }),
     );
+    await seedExchangeRate(t);
+    await seedActivePlan(t, adminId);
 
     const depositId = await asUser.mutation(api.deposits.create, {
-      amount: 250,
+      amountUsd: 250,
       currency: "USDT",
+      txHash: "0xabc",
     });
 
     const deposit = await t.run((ctx) => ctx.db.get(depositId));
@@ -96,7 +142,11 @@ describe("deposits.create", () => {
     );
 
     await expect(
-      asUser.mutation(api.deposits.create, { amount: 100, currency: "USDT" }),
+      asUser.mutation(api.deposits.create, {
+        amountUsd: 100,
+        currency: "USDT",
+        txHash: "0xabc",
+      }),
     ).rejects.toThrow(/no active deposit address/i);
   });
 });
@@ -110,6 +160,8 @@ describe("deposits.cancel", () => {
         userId,
         amount: 50,
         currency: "USDT",
+        amountUsd: 50,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "pending",
         createdAt: Date.now(),
@@ -130,6 +182,8 @@ describe("deposits.cancel", () => {
         userId,
         amount: 50,
         currency: "USDT",
+        amountUsd: 50,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "approved",
         createdAt: Date.now(),
@@ -148,6 +202,8 @@ describe("deposits.cancel", () => {
         userId: ownerId,
         amount: 50,
         currency: "USDT",
+        amountUsd: 50,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "pending",
         createdAt: Date.now(),
@@ -169,6 +225,8 @@ describe("deposits.listMine", () => {
         userId,
         amount: 10,
         currency: "USDT",
+        amountUsd: 10,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "pending",
         createdAt: Date.now(),
@@ -177,6 +235,8 @@ describe("deposits.listMine", () => {
         userId,
         amount: 20,
         currency: "USDT",
+        amountUsd: 20,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "approved",
         createdAt: Date.now(),
@@ -185,6 +245,8 @@ describe("deposits.listMine", () => {
         userId: otherUserId,
         amount: 999,
         currency: "USDT",
+        amountUsd: 999,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "pending",
         createdAt: Date.now(),
@@ -211,6 +273,8 @@ describe("deposits.approve", () => {
         userId: userId as never,
         amount,
         currency: "USDT",
+        amountUsd: amount,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "pending",
         createdAt: Date.now(),
@@ -268,6 +332,8 @@ describe("deposits.approve", () => {
         userId: userId as never,
         amount: 100,
         currency: "USDT",
+        amountUsd: 100,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "approved",
         createdAt: Date.now(),
@@ -288,7 +354,7 @@ describe("deposits.approve", () => {
         referrerId: referrerId as never,
         referredUserId: referredUserId as never,
         commissionRate: 0.1,
-        totalCommissionEarned: 0,
+        totalCommissionEarned: { BTC: 0, ETH: 0, USDT: 0, USDC: 0, BNB: 0 },
         createdAt: Date.now(),
       }),
     );
@@ -301,7 +367,7 @@ describe("deposits.approve", () => {
     expect((referrer as any)?.balances.USDT).toBe(100); // 1000 * 0.1
 
     const referral = await t.run((ctx) => ctx.db.query("referrals").first());
-    expect(referral?.totalCommissionEarned).toBe(100);
+    expect(referral?.totalCommissionEarned.USDT).toBe(100);
 
     const referrerTxs = await t.run((ctx) =>
       ctx.db
@@ -337,6 +403,8 @@ describe("deposits.reject", () => {
         userId: userId as never,
         amount: 100,
         currency: "USDT",
+        amountUsd: 100,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "pending",
         createdAt: Date.now(),
@@ -357,6 +425,8 @@ describe("deposits.reject", () => {
         userId: userId as never,
         amount: 100,
         currency: "USDT",
+        amountUsd: 100,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "pending",
         createdAt: Date.now(),
@@ -377,6 +447,8 @@ describe("deposits.reject", () => {
         userId: userId as never,
         amount: 100,
         currency: "USDT",
+        amountUsd: 100,
+        quotedRate: 1,
         destinationWalletAddress: "T-x",
         status: "pending",
         createdAt: Date.now(),
@@ -400,5 +472,72 @@ describe("deposits.reject", () => {
     const auditLog = await t.run((ctx) => ctx.db.query("adminAuditLog").collect());
     expect(auditLog).toHaveLength(1);
     expect(auditLog[0].action).toBe("reject_deposit");
+  });
+});
+
+// The actual validation *rules* (allowed types, size limit) are exhaustively
+// covered by lib/fileValidation.test.ts as pure-function tests --
+// convex-test's in-memory storage mock only ever records size/sha256 on a
+// stored blob, never contentType (unlike the real Convex backend, which
+// captures it from the upload's Content-Type header), so every upload here
+// necessarily fails the content-type check regardless of what's passed to
+// `new Blob([...], { type })`. These tests instead prove the *wiring*: that
+// deposits.create actually calls validateProofUpload, and reacts correctly
+// (deletes the orphaned upload, rethrows) when it fails.
+describe("deposits.create proof upload wiring", () => {
+  async function seedWallet(t: ReturnType<typeof convexTest>) {
+    await t.run((ctx) =>
+      ctx.db.insert("platformWallets", {
+        currency: "USDT",
+        address: "T-x",
+        network: "TRC20",
+        isActive: true,
+      }),
+    );
+    await seedExchangeRate(t);
+    const { adminId } = await seedAdmin(t);
+    await seedActivePlan(t, adminId);
+  }
+
+  it("creates the deposit normally when no proof is attached", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedUser(t);
+    await seedWallet(t);
+
+    const depositId = await asUser.mutation(api.deposits.create, {
+      amountUsd: 100,
+      currency: "USDT",
+      txHash: "0xproof-free",
+    });
+
+    const deposit = await t.run((ctx) => ctx.db.get(depositId));
+    expect(deposit?.proofFileId).toBeUndefined();
+  });
+
+  it("rejects an upload that fails validation, and does not create a deposit", async () => {
+    const t = convexTest(schema, modules);
+    const { asUser } = await seedUser(t);
+    await seedWallet(t);
+
+    const storageId = await t.run((ctx) =>
+      ctx.storage.store(new Blob(["some-bytes"], { type: "image/png" })),
+    );
+
+    await expect(
+      asUser.mutation(api.deposits.create, {
+        amountUsd: 100,
+        currency: "USDT",
+        txHash: "0xinvalid-proof",
+        proofFileId: storageId,
+      }),
+    ).rejects.toThrow(/PNG, JPEG, or WebP/);
+
+    // ctx.storage.delete(storageId) does run in this path (see
+    // convex/deposits.ts), but convex-test's storage mock doesn't remove the
+    // _storage metadata row on delete the way the real backend does, so
+    // that specific side effect isn't independently verifiable here. What's
+    // verifiable and what matters: no deposit got created.
+    const deposits = await t.run((ctx) => ctx.db.query("deposits").collect());
+    expect(deposits).toHaveLength(0);
   });
 });

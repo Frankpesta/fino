@@ -2,12 +2,15 @@ import { v } from "convex/values";
 import { mutation, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireUser } from "./model/authz";
+import { deliverEmail } from "./model/email";
 import {
   generateVerificationCode,
   isExpired,
   canResend,
   VERIFICATION_CODE_TTL_MS,
 } from "../lib/verificationCode";
+import { VerificationCodeEmail } from "../emails/VerificationCodeEmail";
+import { WelcomeEmail } from "../emails/WelcomeEmail";
 
 export const verifyCode = mutation({
   args: { code: v.string() },
@@ -73,19 +76,34 @@ export const resendCode = mutation({
   },
 });
 
-// Stubs until Phase 6 wires these to Resend + react-email templates (see
-// docs/07-phase-6-emails-notifications.md). Kept as scheduled actions now so
-// swapping in real sends later doesn't change any mutation's shape.
+// Security-critical -- always sends regardless of notification preferences
+// (see docs/07-phase-6-emails-notifications.md 6.3).
 export const sendVerificationEmail = internalAction({
   args: { userId: v.id("users"), code: v.string() },
-  handler: async (_ctx, args) => {
-    console.log(`[email:verification] userId=${args.userId} code=${args.code}`);
+  handler: async (ctx, args) => {
+    const user = await ctx.runQuery(internal.profile.getUserInternal, { userId: args.userId });
+    if (!user) return;
+    await deliverEmail(ctx, {
+      to: user.email,
+      subject: "Verify your email",
+      react: VerificationCodeEmail({ code: args.code }),
+      template: "verification_code",
+      userId: user._id,
+    });
   },
 });
 
 export const sendWelcomeEmail = internalAction({
   args: { userId: v.id("users") },
-  handler: async (_ctx, args) => {
-    console.log(`[email:welcome] userId=${args.userId}`);
+  handler: async (ctx, args) => {
+    const user = await ctx.runQuery(internal.profile.getUserInternal, { userId: args.userId });
+    if (!user) return;
+    await deliverEmail(ctx, {
+      to: user.email,
+      subject: "Welcome to Fino",
+      react: WelcomeEmail(),
+      template: "welcome",
+      userId: user._id,
+    });
   },
 });

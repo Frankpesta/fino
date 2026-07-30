@@ -1,9 +1,11 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { requireVerifiedUser } from "./model/authz";
 import { getAvailableBalance } from "./model/balances";
+import { getCachedUsdRate } from "./model/exchangeRates";
 import { currencyValidator } from "./schema";
-import { addMoney, applyDelta } from "../lib/money";
+import { addMoney, applyDelta, multiplyMoney } from "../lib/money";
 import { computeEndsAt, dailyAccrualAmount, isAccrualDue } from "../lib/investmentMath";
 
 export const listMine = query({
@@ -67,11 +69,22 @@ export const invest = mutation({
     if (plan.currency !== "ANY" && plan.currency !== args.currency) {
       throw new Error(`This plan only accepts ${plan.currency}`);
     }
-    if (args.amount < plan.minDeposit) {
-      throw new Error(`Minimum investment for this plan is ${plan.minDeposit}`);
+
+    // Plan tiers are USD-denominated (see lib/planMatching.ts) -- converting
+    // the chosen native-currency amount through the live cached rate keeps
+    // this manual "invest already-available balance" path consistent with
+    // deposit-time plan matching, even though this path never touches USD
+    // for the actual balance/investment amounts themselves.
+    const rate = await getCachedUsdRate(ctx, args.currency);
+    if (rate <= 0) {
+      throw new Error("Live pricing isn't available for this currency right now -- try again shortly");
     }
-    if (plan.maxDeposit !== undefined && args.amount > plan.maxDeposit) {
-      throw new Error(`Maximum investment for this plan is ${plan.maxDeposit}`);
+    const amountUsd = multiplyMoney(args.amount, rate);
+    if (amountUsd < plan.minDepositUsd) {
+      throw new Error(`Minimum investment for this plan is $${plan.minDepositUsd}`);
+    }
+    if (plan.maxDepositUsd !== undefined && amountUsd > plan.maxDepositUsd) {
+      throw new Error(`Maximum investment for this plan is $${plan.maxDepositUsd}`);
     }
 
     // Respects the same withdrawal hold as convex/withdrawals.ts -- a user
@@ -118,6 +131,16 @@ export const invest = mutation({
       createdAt: now,
     });
 
+    await ctx.scheduler.runAfter(0, internal.emails.sendInvestmentStarted, {
+      userId: user._id,
+      planName: plan.name,
+      principal: args.amount,
+      currency: args.currency,
+      rate: plan.rate,
+      rateInterval: plan.rateInterval,
+      endsAt: computeEndsAt(now, plan.durationDays),
+    });
+
     return investmentId;
   },
 });
@@ -150,41 +173,61 @@ export const runDailyAccrual = internalMutation({
       .withIndex("by_status", (q) => q.eq("status", "active"))
       .collect();
 
+    // Each investment is isolated in its own try/catch so one bad record
+    // (e.g. a dangling userId) can't silently abort accrual for every other
+    // active investment in the same run -- a partial run is recoverable next
+    // tick, a fully-skipped run is a direct financial discrepancy across the
+    // whole book. Failures are collected and alert admins below.
+    const errors: string[] = [];
     for (const investment of activeInvestments) {
-      if (!isAccrualDue(investment.lastAccrualAt, now)) continue;
+      try {
+        if (!isAccrualDue(investment.lastAccrualAt, now)) continue;
 
-      const amount = dailyAccrualAmount(
-        investment.principal,
-        investment.rate,
-        investment.rateInterval,
-      );
-      const newTotalAccrued = addMoney(investment.totalAccrued, amount);
+        const amount = dailyAccrualAmount(
+          investment.principal,
+          investment.rate,
+          investment.rateInterval,
+        );
+        const newTotalAccrued = addMoney(investment.totalAccrued, amount);
 
-      if (investment.payoutStyle === "accrual") {
-        const user = await ctx.db.get(investment.userId);
-        if (!user) continue;
-        const balanceBefore = user.balances[investment.currency];
-        const balanceAfter = applyDelta(balanceBefore, amount);
-        await ctx.db.patch(user._id, {
-          balances: { ...user.balances, [investment.currency]: balanceAfter },
+        if (investment.payoutStyle === "accrual") {
+          const user = await ctx.db.get(investment.userId);
+          if (!user) continue;
+          const balanceBefore = user.balances[investment.currency];
+          const balanceAfter = applyDelta(balanceBefore, amount);
+          await ctx.db.patch(user._id, {
+            balances: { ...user.balances, [investment.currency]: balanceAfter },
+          });
+          await ctx.db.insert("transactions", {
+            userId: user._id,
+            type: "payout",
+            amount,
+            currency: investment.currency,
+            balanceBefore,
+            balanceAfter,
+            relatedId: investment._id,
+            performedBy: user._id,
+            note: "Daily accrual",
+            createdAt: now,
+          });
+        }
+
+        await ctx.db.patch(investment._id, {
+          totalAccrued: newTotalAccrued,
+          lastAccrualAt: now,
         });
-        await ctx.db.insert("transactions", {
-          userId: user._id,
-          type: "payout",
-          amount,
-          currency: investment.currency,
-          balanceBefore,
-          balanceAfter,
-          relatedId: investment._id,
-          performedBy: user._id,
-          note: "Daily accrual",
-          createdAt: now,
-        });
+      } catch (err) {
+        errors.push(
+          `investment ${investment._id}: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
+    }
 
-      await ctx.db.patch(investment._id, {
-        totalAccrued: newTotalAccrued,
-        lastAccrualAt: now,
+    if (errors.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.emails.sendCronFailureAlert, {
+        cronName: "runDailyAccrual",
+        errorCount: errors.length,
+        firstError: errors[0],
       });
     }
   },
@@ -201,40 +244,66 @@ export const runFinalizeSweep = internalMutation({
         .collect()
     ).filter((inv) => inv.status === "active");
 
+    // Same per-record isolation as runDailyAccrual above -- one investment
+    // failing to finalize must not block principal/payout return for every
+    // other investment due this run.
+    const errors: string[] = [];
     for (const investment of dueInvestments) {
-      const user = await ctx.db.get(investment.userId);
-      if (!user) continue;
+      try {
+        const user = await ctx.db.get(investment.userId);
+        if (!user) continue;
 
-      // "accrual" style already paid out interest day-to-day, so only the
-      // principal is returned. "end_of_term" pays principal + everything
-      // accrued in one lump sum now.
-      const payoutAmount =
-        investment.payoutStyle === "end_of_term"
-          ? addMoney(investment.principal, investment.totalAccrued)
-          : investment.principal;
-
-      const balanceBefore = user.balances[investment.currency];
-      const balanceAfter = applyDelta(balanceBefore, payoutAmount);
-      await ctx.db.patch(user._id, {
-        balances: { ...user.balances, [investment.currency]: balanceAfter },
-      });
-      await ctx.db.insert("transactions", {
-        userId: user._id,
-        type: "payout",
-        amount: payoutAmount,
-        currency: investment.currency,
-        balanceBefore,
-        balanceAfter,
-        relatedId: investment._id,
-        performedBy: user._id,
-        note:
+        // "accrual" style already paid out interest day-to-day, so only the
+        // principal is returned. "end_of_term" pays principal + everything
+        // accrued in one lump sum now.
+        const payoutAmount =
           investment.payoutStyle === "end_of_term"
-            ? "End-of-term payout (principal + accrued)"
-            : "Principal returned at term end",
-        createdAt: now,
-      });
+            ? addMoney(investment.principal, investment.totalAccrued)
+            : investment.principal;
 
-      await ctx.db.patch(investment._id, { status: "completed" });
+        const balanceBefore = user.balances[investment.currency];
+        const balanceAfter = applyDelta(balanceBefore, payoutAmount);
+        await ctx.db.patch(user._id, {
+          balances: { ...user.balances, [investment.currency]: balanceAfter },
+        });
+        await ctx.db.insert("transactions", {
+          userId: user._id,
+          type: "payout",
+          amount: payoutAmount,
+          currency: investment.currency,
+          balanceBefore,
+          balanceAfter,
+          relatedId: investment._id,
+          performedBy: user._id,
+          note:
+            investment.payoutStyle === "end_of_term"
+              ? "End-of-term payout (principal + accrued)"
+              : "Principal returned at term end",
+          createdAt: now,
+        });
+
+        await ctx.db.patch(investment._id, { status: "completed" });
+
+        const plan = await ctx.db.get(investment.planId);
+        await ctx.scheduler.runAfter(0, internal.emails.sendInvestmentMatured, {
+          userId: user._id,
+          planName: plan?.name ?? "your plan",
+          payoutAmount,
+          currency: investment.currency,
+        });
+      } catch (err) {
+        errors.push(
+          `investment ${investment._id}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    if (errors.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.emails.sendCronFailureAlert, {
+        cronName: "runFinalizeSweep",
+        errorCount: errors.length,
+        firstError: errors[0],
+      });
     }
   },
 });

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { requireAdmin, requireVerifiedUser } from "./model/authz";
 import { logAdminAction } from "./model/audit";
 import { currencyValidator } from "./schema";
@@ -69,7 +70,7 @@ export const create = mutation({
       );
     }
 
-    return await ctx.db.insert("withdrawals", {
+    const withdrawalId = await ctx.db.insert("withdrawals", {
       userId: user._id,
       amount: args.amount,
       currency: args.currency,
@@ -82,6 +83,14 @@ export const create = mutation({
       payoutTxHash: undefined,
       createdAt: Date.now(),
     });
+
+    await ctx.scheduler.runAfter(0, internal.emails.sendWithdrawalSubmitted, {
+      userId: user._id,
+      amount: args.amount,
+      currency: args.currency,
+    });
+
+    return withdrawalId;
   },
 });
 
@@ -185,6 +194,13 @@ export const approve = mutation({
       before: { status: "pending" },
       after: { status: "approved" },
     });
+
+    await ctx.scheduler.runAfter(0, internal.emails.sendWithdrawalApproved, {
+      userId: user._id,
+      amount: withdrawal.amount,
+      currency: withdrawal.currency,
+      payoutTxHash: args.payoutTxHash?.trim() || undefined,
+    });
   },
 });
 
@@ -231,11 +247,12 @@ export const reject = mutation({
       throw new Error("A rejection reason is required");
     }
 
+    const reason = args.rejectionReason.trim();
     await ctx.db.patch(args.withdrawalId, {
       status: "rejected",
       reviewedBy: admin._id,
       reviewedAt: Date.now(),
-      rejectionReason: args.rejectionReason.trim(),
+      rejectionReason: reason,
     });
 
     await logAdminAction(ctx, {
@@ -244,7 +261,14 @@ export const reject = mutation({
       targetTable: "withdrawals",
       targetId: args.withdrawalId,
       before: { status: "pending" },
-      after: { status: "rejected", rejectionReason: args.rejectionReason.trim() },
+      after: { status: "rejected", rejectionReason: reason },
+    });
+
+    await ctx.scheduler.runAfter(0, internal.emails.sendWithdrawalRejected, {
+      userId: withdrawal.userId,
+      amount: withdrawal.amount,
+      currency: withdrawal.currency,
+      reason,
     });
   },
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -13,6 +14,7 @@ import type { Currency } from "@/lib/currency";
 import { projectedTotalAtTermEnd } from "@/lib/investmentMath";
 
 export default function InvestmentDetailPage() {
+  const [now] = useState(() => Date.now());
   const params = useParams<{ investmentId: string }>();
   const data = useQuery(api.investments.getById, {
     investmentId: params.investmentId as Id<"investments">,
@@ -30,7 +32,6 @@ export default function InvestmentDetailPage() {
 
   const { investment, plan, accrualHistory } = data;
   const currency = investment.currency as Currency;
-  const now = Date.now();
   const progress = Math.min(
     100,
     Math.max(

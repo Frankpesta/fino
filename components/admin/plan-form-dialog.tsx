@@ -44,8 +44,10 @@ export function PlanFormDialog({
   const [rate, setRate] = useState(plan ? String(plan.rate * 100) : "");
   const [rateInterval, setRateInterval] = useState(plan?.rateInterval ?? "weekly");
   const [durationDays, setDurationDays] = useState(plan ? String(plan.durationDays) : "");
-  const [minDeposit, setMinDeposit] = useState(plan ? String(plan.minDeposit) : "");
-  const [maxDeposit, setMaxDeposit] = useState(plan?.maxDeposit ? String(plan.maxDeposit) : "");
+  const [minDepositUsd, setMinDepositUsd] = useState(plan ? String(plan.minDepositUsd) : "");
+  const [maxDepositUsd, setMaxDepositUsd] = useState(
+    plan?.maxDepositUsd ? String(plan.maxDepositUsd) : "",
+  );
   const [payoutStyle, setPayoutStyle] = useState(plan?.payoutStyle ?? "accrual");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,8 +58,8 @@ export function PlanFormDialog({
 
     const parsedRate = Number(rate) / 100;
     const parsedDuration = Number(durationDays);
-    const parsedMin = Number(minDeposit);
-    const parsedMax = maxDeposit.trim() ? Number(maxDeposit) : undefined;
+    const parsedMin = Number(minDepositUsd);
+    const parsedMax = maxDepositUsd.trim() ? Number(maxDepositUsd) : undefined;
 
     if (!name.trim() || !description.trim()) {
       setError("Name and description are required");
@@ -83,16 +85,16 @@ export function PlanFormDialog({
           planId: plan._id,
           name: name.trim(),
           description: description.trim(),
-          minDeposit: parsedMin,
-          maxDeposit: parsedMax,
+          minDepositUsd: parsedMin,
+          maxDepositUsd: parsedMax,
           rate: parsedRate,
         });
       } else {
         await create({
           name: name.trim(),
           description: description.trim(),
-          minDeposit: parsedMin,
-          maxDeposit: parsedMax,
+          minDepositUsd: parsedMin,
+          maxDepositUsd: parsedMax,
           currency: currency as (typeof CURRENCIES)[number] | "ANY",
           rate: parsedRate,
           rateInterval: rateInterval as "daily" | "weekly" | "monthly",
@@ -196,23 +198,23 @@ export function PlanFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="plan-min">Min deposit</Label>
+              <Label htmlFor="plan-min">Min deposit (USD)</Label>
               <Input
                 id="plan-min"
                 type="number"
                 step="any"
-                value={minDeposit}
-                onChange={(e) => setMinDeposit(e.target.value)}
+                value={minDepositUsd}
+                onChange={(e) => setMinDepositUsd(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="plan-max">Max deposit (optional)</Label>
+              <Label htmlFor="plan-max">Max deposit (USD, optional)</Label>
               <Input
                 id="plan-max"
                 type="number"
                 step="any"
-                value={maxDeposit}
-                onChange={(e) => setMaxDeposit(e.target.value)}
+                value={maxDepositUsd}
+                onChange={(e) => setMaxDepositUsd(e.target.value)}
               />
             </div>
           </div>

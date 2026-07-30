@@ -18,4 +18,14 @@ crons.interval(
   internal.investments.runFinalizeSweep,
 );
 
+// Cached, not live-fetched per request -- deposit quoting and dashboard
+// totals read from this cache (see convex/exchangeRates.ts), so a 5-minute
+// staleness window is an acceptable tradeoff for not depending on a third
+// party being up in the request path.
+crons.interval(
+  "refresh exchange rates",
+  { minutes: 5 },
+  internal.exchangeRates.refreshRatesInternal,
+);
+
 export default crons;

@@ -23,6 +23,20 @@ export const listActive = query({
   },
 });
 
+// Public/unauthenticated -- powers the marketing site's plans teaser.
+// Deliberately the same shape as `listActive` (plan terms are meant to be
+// public marketing information; nothing sensitive lives on this table).
+export const listPublic = query({
+  args: {},
+  handler: async (ctx) => {
+    const plans = await ctx.db
+      .query("investmentPlans")
+      .withIndex("by_isActive", (q) => q.eq("isActive", true))
+      .collect();
+    return plans.sort((a, b) => a.sortOrder - b.sortOrder);
+  },
+});
+
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
@@ -38,8 +52,8 @@ export const create = mutation({
   args: {
     name: v.string(),
     description: v.string(),
-    minDeposit: v.number(),
-    maxDeposit: v.optional(v.number()),
+    minDepositUsd: v.number(),
+    maxDepositUsd: v.optional(v.number()),
     currency: v.union(currencyValidator, v.literal("ANY")),
     rate: v.number(),
     rateInterval: rateIntervalValidator,
@@ -50,9 +64,9 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const admin = await requireAdmin(ctx);
 
-    if (args.minDeposit <= 0) throw new Error("minDeposit must be greater than zero");
-    if (args.maxDeposit !== undefined && args.maxDeposit < args.minDeposit) {
-      throw new Error("maxDeposit cannot be less than minDeposit");
+    if (args.minDepositUsd <= 0) throw new Error("minDepositUsd must be greater than zero");
+    if (args.maxDepositUsd !== undefined && args.maxDepositUsd < args.minDepositUsd) {
+      throw new Error("maxDepositUsd cannot be less than minDepositUsd");
     }
     if (args.rate <= 0) throw new Error("rate must be greater than zero");
     if (args.durationDays <= 0) throw new Error("durationDays must be greater than zero");
@@ -82,8 +96,8 @@ export const update = mutation({
     planId: v.id("investmentPlans"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
-    minDeposit: v.optional(v.number()),
-    maxDeposit: v.optional(v.number()),
+    minDepositUsd: v.optional(v.number()),
+    maxDepositUsd: v.optional(v.number()),
     rate: v.optional(v.number()),
     sortOrder: v.optional(v.number()),
     isActive: v.optional(v.boolean()),

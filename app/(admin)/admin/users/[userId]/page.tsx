@@ -9,16 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusBadge } from "@/components/ui/status-badge";
+import { StatusBadge, USER_STATUS_STYLES } from "@/components/ui/status-badge";
 import { AmountDisplay } from "@/components/ui/amount-display";
 import { BalanceAdjustmentForm } from "@/components/admin/balance-adjustment-form";
 import { CURRENCIES, type Currency } from "@/lib/currency";
-
-const STATUS_STYLES: Record<string, string> = {
-  active: "bg-success/15 text-success-foreground border-success/30",
-  suspended: "bg-warning/15 text-warning-foreground border-warning/30",
-  banned: "bg-destructive/15 text-destructive border-destructive/30",
-};
 
 export default function AdminUserDetailPage() {
   const params = useParams<{ userId: string }>();
@@ -54,7 +48,7 @@ export default function AdminUserDetailPage() {
         <div>
           <h1 className="font-heading text-2xl font-semibold tracking-tight">{user.email}</h1>
           <div className="mt-1 flex items-center gap-2">
-            <Badge variant="outline" className={STATUS_STYLES[user.status]}>
+            <Badge variant="outline" className={USER_STATUS_STYLES[user.status]}>
               {user.status}
             </Badge>
             <Badge variant="outline">{user.role}</Badge>

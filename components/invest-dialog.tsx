@@ -46,6 +46,8 @@ export function InvestDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const available = useQuery(api.withdrawals.getAvailableBalance, { currency });
+  const rates = useQuery(api.exchangeRates.get);
+  const rate = rates?.[currency]?.usdRate;
   const invest = useMutation(api.investments.invest);
 
   async function handleSubmit(e: FormEvent) {
@@ -57,13 +59,16 @@ export function InvestDialog({
       setError("Enter a valid amount");
       return;
     }
-    if (parsedAmount < plan.minDeposit) {
-      setError(`Minimum investment for this plan is ${plan.minDeposit}`);
-      return;
-    }
-    if (plan.maxDeposit !== undefined && parsedAmount > plan.maxDeposit) {
-      setError(`Maximum investment for this plan is ${plan.maxDeposit}`);
-      return;
+    if (rate) {
+      const amountUsd = parsedAmount * rate;
+      if (amountUsd < plan.minDepositUsd) {
+        setError(`Minimum investment for this plan is $${plan.minDepositUsd}`);
+        return;
+      }
+      if (plan.maxDepositUsd !== undefined && amountUsd > plan.maxDepositUsd) {
+        setError(`Maximum investment for this plan is $${plan.maxDepositUsd}`);
+        return;
+      }
     }
     if (available !== undefined && parsedAmount > available) {
       setError(`Amount exceeds your available balance (${available} ${currency})`);
@@ -133,9 +138,9 @@ export function InvestDialog({
               ) : (
                 <AmountDisplay amount={available} currency={currency} />
               )}
-              {" · Min "}
-              {plan.minDeposit}
-              {plan.maxDeposit !== undefined && <> · Max {plan.maxDeposit}</>}
+              {" · Min $"}
+              {plan.minDepositUsd}
+              {plan.maxDepositUsd !== undefined && <> · Max ${plan.maxDepositUsd}</>}
             </p>
           </div>
 

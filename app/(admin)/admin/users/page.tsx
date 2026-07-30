@@ -8,16 +8,11 @@ import type { Doc } from "@/convex/_generated/dataModel";
 import { Input } from "@/components/ui/input";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
+import { USER_STATUS_STYLES } from "@/components/ui/status-badge";
 import { AmountDisplay } from "@/components/ui/amount-display";
 import { CURRENCIES, type Currency } from "@/lib/currency";
 
 type AdminUser = Doc<"users"> & { referralCount: number };
-
-const STATUS_STYLES: Record<string, string> = {
-  active: "bg-success/15 text-success-foreground border-success/30",
-  suspended: "bg-warning/15 text-warning-foreground border-warning/30",
-  banned: "bg-destructive/15 text-destructive border-destructive/30",
-};
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
@@ -38,7 +33,7 @@ export default function AdminUsersPage() {
       key: "status",
       header: "Status",
       cell: (row) => (
-        <Badge variant="outline" className={STATUS_STYLES[row.status]}>
+        <Badge variant="outline" className={USER_STATUS_STYLES[row.status]}>
           {row.status}
         </Badge>
       ),

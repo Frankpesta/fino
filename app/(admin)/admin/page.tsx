@@ -9,7 +9,7 @@ import { CurrencyIcon } from "@/components/ui/currency-icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CURRENCIES, type Currency } from "@/lib/currency";
-import { Users, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Users, ArrowDownToLine, ArrowUpFromLine, ShieldCheck, WalletCards } from "lucide-react";
 
 function CurrencyBreakdown({ values }: { values: Record<Currency, number> }) {
   return (
@@ -33,19 +33,24 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Admin overview</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Platform-wide stats, straight from the ledger.
-        </p>
+      <div className="relative overflow-hidden rounded-3xl border border-primary/15 bg-[linear-gradient(120deg,oklch(0.2_0.045_155),oklch(0.14_0.025_155))] px-6 py-7 text-white shadow-xl shadow-primary/5 sm:px-8">
+        <div className="absolute -right-16 -top-20 size-56 rounded-full bg-primary/30 blur-3xl" />
+        <div className="relative flex items-start gap-4">
+          <span className="flex size-11 items-center justify-center rounded-2xl bg-white/10 text-primary"><ShieldCheck className="size-5" /></span>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/55">Operations center</p>
+            <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight">Run the platform with confidence.</h1>
+            <p className="mt-2 text-sm text-white/65">Review queues, ledger totals, and operational activity at a glance.</p>
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <Link href="/admin/deposits">
-          <Card className="transition-colors hover:border-primary/50">
+          <Card className="overflow-hidden border-primary/10 bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg">
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
               <span className="text-sm text-muted-foreground">Pending deposits</span>
-              <ArrowDownToLine className="size-4 text-muted-foreground" />
+              <span className="rounded-xl bg-primary/10 p-2 text-primary"><ArrowDownToLine className="size-4" /></span>
             </CardHeader>
             <CardContent>
               <div className="font-heading text-3xl font-semibold tabular-nums">
@@ -56,10 +61,10 @@ export default function AdminDashboardPage() {
           </Card>
         </Link>
         <Link href="/admin/withdrawals">
-          <Card className="transition-colors hover:border-primary/50">
+          <Card className="overflow-hidden border-primary/10 bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg">
             <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
               <span className="text-sm text-muted-foreground">Pending withdrawals</span>
-              <ArrowUpFromLine className="size-4 text-muted-foreground" />
+              <span className="rounded-xl bg-primary/10 p-2 text-primary"><ArrowUpFromLine className="size-4" /></span>
             </CardHeader>
             <CardContent>
               <div className="font-heading text-3xl font-semibold tabular-nums">
@@ -77,6 +82,7 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
+          className="border-primary/10 shadow-sm"
           label="Total users"
           icon={<Users className="size-4" />}
           value={
@@ -84,6 +90,7 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
+          className="border-primary/10 shadow-sm"
           label="Deposited (all time)"
           value={
             stats ? (
@@ -94,6 +101,7 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
+          className="border-primary/10 shadow-sm"
           label="Withdrawn (all time)"
           value={
             stats ? (
@@ -104,7 +112,9 @@ export default function AdminDashboardPage() {
           }
         />
         <StatCard
+          className="border-primary/10 shadow-sm"
           label="Currently invested"
+          icon={<WalletCards className="size-4" />}
           value={
             stats ? (
               <CurrencyBreakdown values={stats.totalInvested} />
@@ -115,7 +125,7 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      <Card>
+      <Card className="overflow-hidden shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-medium">Recent admin actions</CardTitle>
         </CardHeader>

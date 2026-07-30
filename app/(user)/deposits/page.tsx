@@ -100,7 +100,7 @@ export default function DepositsPage() {
         <div>
           <h1 className="font-heading text-2xl font-semibold tracking-tight">Deposits</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every deposit is reviewed by an admin before it's credited to your balance.
+            Every deposit is reviewed by an admin before it&apos;s credited to your balance.
           </p>
         </div>
         <Button render={<Link href="/deposits/new"><Plus />Make a deposit</Link>} />

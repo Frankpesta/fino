@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { requireAdmin } from "./model/authz";
 import { logAdminAction } from "./model/audit";
 import { currencyValidator } from "./schema";
@@ -122,6 +122,16 @@ export const adjustBalance = mutation({
       before: { balance: balanceBefore },
       after: { balance: balanceAfter, note: args.note.trim() },
     });
+  },
+});
+
+export const listAdminsInternal = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_role", (q) => q.eq("role", "admin"))
+      .collect();
   },
 });
 

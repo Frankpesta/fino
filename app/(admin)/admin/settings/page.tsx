@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { CurrencyIcon } from "@/components/ui/currency-icon";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,15 +15,13 @@ import { WalletFormDialog } from "@/components/admin/wallet-form-dialog";
 function MinWithdrawalRow({ currency }: { currency: Currency }) {
   const settings = useQuery(api.platformSettings.get);
   const updateMin = useMutation(api.platformSettings.updateMinWithdrawalAmount);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (settings) setValue(String(settings.minWithdrawalAmount[currency]));
-  }, [settings, currency]);
+  const displayedValue = value ?? (settings ? String(settings.minWithdrawalAmount[currency]) : "");
 
   async function handleSave() {
-    const parsed = Number(value);
+    const parsed = Number(displayedValue);
     if (!Number.isFinite(parsed) || parsed < 0) return;
     await updateMin({ currency, amount: parsed });
     setSaved(true);
@@ -40,7 +37,7 @@ function MinWithdrawalRow({ currency }: { currency: Currency }) {
       <Input
         type="number"
         step="any"
-        value={value}
+        value={displayedValue}
         onChange={(e) => setValue(e.target.value)}
         className="max-w-[140px]"
       />
@@ -54,15 +51,13 @@ function MinWithdrawalRow({ currency }: { currency: Currency }) {
 function ReferralRateSetting() {
   const settings = useQuery(api.platformSettings.get);
   const updateRate = useMutation(api.platformSettings.updateReferralCommissionRateDefault);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (settings) setValue(String(settings.referralCommissionRateDefault * 100));
-  }, [settings]);
+  const displayedValue = value ?? (settings ? String(settings.referralCommissionRateDefault * 100) : "");
 
   async function handleSave() {
-    const parsed = Number(value) / 100;
+    const parsed = Number(displayedValue) / 100;
     if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) return;
     await updateRate({ rate: parsed });
     setSaved(true);
@@ -74,7 +69,7 @@ function ReferralRateSetting() {
       <Input
         type="number"
         step="any"
-        value={value}
+        value={displayedValue}
         onChange={(e) => setValue(e.target.value)}
         className="max-w-[140px]"
       />
@@ -89,15 +84,13 @@ function ReferralRateSetting() {
 function SupportContactSetting() {
   const settings = useQuery(api.platformSettings.get);
   const updateContact = useMutation(api.platformSettings.updateSupportContact);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    if (settings) setValue(settings.supportContact);
-  }, [settings]);
+  const displayedValue = value ?? settings?.supportContact ?? "";
 
   async function handleSave() {
-    await updateContact({ supportContact: value });
+    await updateContact({ supportContact: displayedValue });
     setSaved(true);
     setTimeout(() => setSaved(false), 1500);
   }
@@ -105,7 +98,7 @@ function SupportContactSetting() {
   return (
     <div className="flex items-center gap-3">
       <Input
-        value={value}
+        value={displayedValue}
         onChange={(e) => setValue(e.target.value)}
         placeholder="support@yourdomain.com"
         className="max-w-xs"
@@ -137,7 +130,7 @@ export default function AdminSettingsPage() {
           <CardTitle className="text-base font-medium">Receiving wallets</CardTitle>
           <CardDescription>
             Real addresses the platform controls custody of -- shown to users on the deposit
-            form. Nothing is pre-filled; a currency with no address configured simply won't be
+            form. Nothing is pre-filled; a currency with no address configured simply won&apos;t be
             offered for deposits.
           </CardDescription>
         </CardHeader>
@@ -208,7 +201,7 @@ export default function AdminSettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-medium">Support contact</CardTitle>
-          <CardDescription>Shown to users on rejected deposits/withdrawals.</CardDescription>
+          <CardDescription>Shown to users on rejected deposits and withdrawals.</CardDescription>
         </CardHeader>
         <CardContent>
           <SupportContactSetting />

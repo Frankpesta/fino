@@ -39,3 +39,11 @@ export const AUTH_IMAGES: Record<"signIn" | "signUp" | "verifyEmail", AuthImage>
     attribution: "Fino",
   },
 };
+
+export const MARKETING_IMAGES = {
+  home: unsplash("1518546305927-5a555bb7020d", "w=2200&q=85&auto=format&fit=crop"),
+  about: unsplash("1551830820-330a71b99659", "w=1800&q=80&auto=format&fit=crop"),
+  affiliate: unsplash("1556761175-b413da4baf72", "w=1800&q=80&auto=format&fit=crop"),
+  contact: unsplash("1497366754035-f200968a6e72", "w=1800&q=80&auto=format&fit=crop"),
+  faq: unsplash("1516321318423-f06f85e504b3", "w=1800&q=80&auto=format&fit=crop"),
+} as const;

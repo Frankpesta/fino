@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import {
@@ -19,7 +20,7 @@ import { AmountDisplay } from "@/components/ui/amount-display";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { Currency } from "@/lib/currency";
 
-type DepositWithEmail = Doc<"deposits"> & { userEmail: string };
+type DepositWithEmail = Doc<"deposits"> & { userEmail: string; matchedPlanName: string | null };
 
 export function DepositReviewDialog({
   deposit,
@@ -44,9 +45,12 @@ export function DepositReviewDialog({
     setIsSubmitting(true);
     try {
       await approve({ depositId: deposit._id });
+      toast.success("Deposit approved", { description: `${deposit.userEmail}'s balance was credited.` });
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+      toast.error("Couldn't approve deposit", { description: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -61,9 +65,12 @@ export function DepositReviewDialog({
     setIsSubmitting(true);
     try {
       await reject({ depositId: deposit._id, rejectionReason: rejectionReason.trim() });
+      toast.success("Deposit rejected");
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+      toast.error("Couldn't reject deposit", { description: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -82,12 +89,31 @@ export function DepositReviewDialog({
         <div className="space-y-3 text-sm">
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Amount</span>
-            <AmountDisplay amount={deposit.amount} currency={deposit.currency as Currency} />
+            <div className="text-right">
+              <AmountDisplay amount={deposit.amount} currency={deposit.currency as Currency} />
+              <p className="text-xs text-muted-foreground">
+                ${deposit.amountUsd.toFixed(2)} at quote time (rate {deposit.quotedRate})
+              </p>
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Status</span>
             <StatusBadge status={deposit.status} />
           </div>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground">Matched plan</span>
+            <span className="font-medium">
+              {deposit.matchedPlanName ?? (
+                <span className="text-destructive">none / no longer active</span>
+              )}
+            </span>
+          </div>
+          {deposit.status === "pending" && deposit.matchedPlanName && (
+            <p className="text-xs text-muted-foreground">
+              Approving will credit the balance and immediately start an investment in{" "}
+              {deposit.matchedPlanName}.
+            </p>
+          )}
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground">Receiving address shown</span>
             <span className="font-mono text-xs">{deposit.destinationWalletAddress}</span>

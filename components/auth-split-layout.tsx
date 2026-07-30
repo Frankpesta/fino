@@ -29,25 +29,42 @@ export function AuthSplitLayout({
   const contentRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
-    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+    const mm = gsap.matchMedia();
 
-    tl.fromTo(imageRef.current, { scale: 1.15 }, { scale: 1.02, duration: 2.4 }, 0);
-    tl.to(imageRef.current, { scale: 1.09, duration: 22, ease: "none" }, 2.4);
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-    tl.fromTo(
-      panelRef.current?.querySelectorAll("[data-animate-panel]") ?? [],
-      { opacity: 0, y: 12 },
-      { opacity: 1, y: 0, duration: 0.9, stagger: 0.15 },
-      0.2,
-    );
+      tl.fromTo(imageRef.current, { scale: 1.15 }, { scale: 1.02, duration: 2.4 }, 0);
+      tl.to(imageRef.current, { scale: 1.09, duration: 22, ease: "none" }, 2.4);
 
-    const items = contentRef.current?.querySelectorAll("[data-animate]");
-    tl.fromTo(
-      items ?? [],
-      { opacity: 0, y: 18 },
-      { opacity: 1, y: 0, duration: 0.55, stagger: 0.07 },
-      0.35,
-    );
+      tl.fromTo(
+        panelRef.current?.querySelectorAll("[data-animate-panel]") ?? [],
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.9, stagger: 0.15 },
+        0.2,
+      );
+
+      const items = contentRef.current?.querySelectorAll("[data-animate]");
+      tl.fromTo(
+        items ?? [],
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.55, stagger: 0.07 },
+        0.35,
+      );
+    });
+
+    // No Ken Burns drift or stagger delay -- just present everything at its
+    // final state immediately.
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.set(imageRef.current, { scale: 1 });
+      gsap.set(
+        [
+          ...(panelRef.current?.querySelectorAll("[data-animate-panel]") ?? []),
+          ...(contentRef.current?.querySelectorAll("[data-animate]") ?? []),
+        ],
+        { opacity: 1, y: 0 },
+      );
+    });
   }, []);
 
   return (

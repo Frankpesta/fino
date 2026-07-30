@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, type FormEvent, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,18 @@ import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { AUTH_IMAGES } from "@/lib/authImages";
 
 export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+function SignUpForm() {
   const { signIn } = useAuthActions();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const ref = searchParams.get("ref") ?? undefined;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +33,7 @@ export default function SignUpPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await signIn("password", { email, password, flow: "signUp" });
+      await signIn("password", { email, password, flow: "signUp", ...(ref ? { ref } : {}) });
       router.push("/verify-email");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -79,7 +89,19 @@ export default function SignUpPage() {
         </div>
       </form>
 
-      <p data-animate className="mt-8 text-center text-sm text-muted-foreground">
+      <p data-animate className="mt-6 text-center text-xs text-muted-foreground">
+        By signing up, you agree to our{" "}
+        <Link href="/terms" className="underline-offset-4 hover:underline">
+          Terms of Service
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline-offset-4 hover:underline">
+          Privacy Policy
+        </Link>
+        .
+      </p>
+
+      <p data-animate className="mt-4 text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href="/sign-in" className="text-primary underline-offset-4 hover:underline">
           Sign in

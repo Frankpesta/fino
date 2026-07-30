@@ -36,7 +36,7 @@ function basePlan(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     name: "Growth Plan",
     description: "Test plan",
-    minDeposit: 100,
+    minDepositUsd: 100,
     currency: "USDT" as const,
     rate: 0.07, // 7%/week
     rateInterval: "weekly" as const,
@@ -80,6 +80,13 @@ async function seedInvestment(
   );
 }
 
+async function seedRate(t: ReturnType<typeof convexTest>, currency: string, usdRate: number) {
+  await t.run((ctx) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ctx.db.insert("exchangeRates", { currency, usdRate, updatedAt: Date.now() } as any),
+  );
+}
+
 describe("investments.invest", () => {
   it("rejects an inactive plan", async () => {
     const t = convexTest(schema, modules);
@@ -103,22 +110,35 @@ describe("investments.invest", () => {
     ).rejects.toThrow(/only accepts BTC/i);
   });
 
-  it("rejects an amount below minDeposit", async () => {
+  it("rejects when no live rate is cached for the currency yet", async () => {
     const t = convexTest(schema, modules);
     const adminId = await t.run((ctx) => ctx.db.insert("users", baseUser({ role: "admin" })));
     const { asUser } = await seedUserWithBalance(t, 1000);
-    const planId = await seedPlan(t, adminId, { minDeposit: 500 });
+    const planId = await seedPlan(t, adminId);
+
+    await expect(
+      asUser.mutation(api.investments.invest, { planId, currency: "USDT", amount: 200 }),
+    ).rejects.toThrow(/live pricing/i);
+  });
+
+  it("rejects an amount below minDepositUsd", async () => {
+    const t = convexTest(schema, modules);
+    const adminId = await t.run((ctx) => ctx.db.insert("users", baseUser({ role: "admin" })));
+    const { asUser } = await seedUserWithBalance(t, 1000);
+    const planId = await seedPlan(t, adminId, { minDepositUsd: 500 });
+    await seedRate(t, "USDT", 1);
 
     await expect(
       asUser.mutation(api.investments.invest, { planId, currency: "USDT", amount: 200 }),
     ).rejects.toThrow(/minimum investment/i);
   });
 
-  it("rejects an amount above maxDeposit", async () => {
+  it("rejects an amount above maxDepositUsd", async () => {
     const t = convexTest(schema, modules);
     const adminId = await t.run((ctx) => ctx.db.insert("users", baseUser({ role: "admin" })));
     const { asUser } = await seedUserWithBalance(t, 10000);
-    const planId = await seedPlan(t, adminId, { maxDeposit: 1000 });
+    const planId = await seedPlan(t, adminId, { maxDepositUsd: 1000 });
+    await seedRate(t, "USDT", 1);
 
     await expect(
       asUser.mutation(api.investments.invest, { planId, currency: "USDT", amount: 2000 }),
@@ -129,7 +149,8 @@ describe("investments.invest", () => {
     const t = convexTest(schema, modules);
     const adminId = await t.run((ctx) => ctx.db.insert("users", baseUser({ role: "admin" })));
     const { userId, asUser } = await seedUserWithBalance(t, 1000);
-    const planId = await seedPlan(t, adminId, { minDeposit: 100 });
+    const planId = await seedPlan(t, adminId, { minDepositUsd: 100 });
+    await seedRate(t, "USDT", 1);
     await t.run((ctx) =>
       ctx.db.insert("withdrawals", {
         userId,
@@ -152,6 +173,7 @@ describe("investments.invest", () => {
     const adminId = await t.run((ctx) => ctx.db.insert("users", baseUser({ role: "admin" })));
     const { userId, asUser } = await seedUserWithBalance(t, 1000);
     const planId = await seedPlan(t, adminId, { rate: 0.07, rateInterval: "weekly" });
+    await seedRate(t, "USDT", 1);
 
     const investmentId = await asUser.mutation(api.investments.invest, {
       planId,
@@ -319,6 +341,66 @@ describe("investments.runDailyAccrual", () => {
 
     const investment = await t.run((ctx) => ctx.db.get(investmentId));
     expect(investment?.totalAccrued).toBe(0);
+  });
+
+  it("isolates a single bad record: other investments still accrue and an admin alert is scheduled", async () => {
+    const t = convexTest(schema, modules);
+    await t.run((ctx) => ctx.db.insert("users", baseUser({ role: "admin" })));
+    const planId = await seedDummyPlanId(t);
+
+    // A corrupted investment with a wildly negative rate -- simulates bad
+    // data reaching the cron, which should throw inside applyDelta (balance
+    // would go negative) rather than silently corrupting the user's balance.
+    const { userId: badUserId } = await seedUserWithBalance(t, 5);
+    const badInvestmentId = await seedInvestment(t, {
+      userId: badUserId,
+      planId,
+      principal: 1000,
+      currency: "USDT",
+      rate: -100,
+      rateInterval: "weekly",
+      payoutStyle: "accrual",
+      status: "active",
+      startedAt: Date.now() - ONE_DAY_MS,
+      endsAt: Date.now() + 13 * ONE_DAY_MS,
+      totalAccrued: 0,
+      lastAccrualAt: Date.now() - ONE_DAY_MS,
+    });
+
+    const { userId: goodUserId } = await seedUserWithBalance(t, 500);
+    const goodInvestmentId = await seedInvestment(t, {
+      userId: goodUserId,
+      planId,
+      principal: 1000,
+      currency: "USDT",
+      rate: 0.07,
+      rateInterval: "weekly",
+      payoutStyle: "accrual",
+      status: "active",
+      startedAt: Date.now() - ONE_DAY_MS,
+      endsAt: Date.now() + 13 * ONE_DAY_MS,
+      totalAccrued: 0,
+      lastAccrualAt: Date.now() - ONE_DAY_MS,
+    });
+
+    await t.mutation(internal.investments.runDailyAccrual, {});
+
+    // The good investment still accrued despite the bad one throwing.
+    const goodInvestment = await t.run((ctx) => ctx.db.get(goodInvestmentId));
+    expect(goodInvestment?.totalAccrued).toBe(10);
+    const goodUser = await t.run((ctx) => ctx.db.get(goodUserId));
+    expect(goodUser?.balances.USDT).toBe(510);
+
+    // The bad investment's own state and its user's balance are untouched --
+    // the throw happens before any patch for that record, not mid-write.
+    const badInvestment = await t.run((ctx) => ctx.db.get(badInvestmentId));
+    expect(badInvestment?.totalAccrued).toBe(0);
+    expect(badInvestment?.lastAccrualAt).toBe(badInvestment!.startedAt);
+    const badUser = await t.run((ctx) => ctx.db.get(badUserId));
+    expect(badUser?.balances.USDT).toBe(5);
+
+    // The admin alert action was scheduled and runs without error.
+    await expect(t.finishInProgressScheduledFunctions()).resolves.not.toThrow();
   });
 
   it("ignores non-active investments", async () => {

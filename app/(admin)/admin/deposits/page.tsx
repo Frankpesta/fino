@@ -14,7 +14,7 @@ import type { Currency } from "@/lib/currency";
 import { DepositReviewDialog } from "@/components/admin/deposit-review-dialog";
 
 type DepositStatus = "pending" | "approved" | "rejected" | "cancelled";
-type Deposit = Doc<"deposits"> & { userEmail: string };
+type Deposit = Doc<"deposits"> & { userEmail: string; matchedPlanName: string | null };
 
 const TABS: { value: DepositStatus | "all"; label: string; empty: string }[] = [
   { value: "pending", label: "Pending", empty: "No pending deposits." },
@@ -54,6 +54,12 @@ export default function AdminDepositsPage() {
       header: "Amount",
       cell: (row) => <AmountDisplay amount={row.amount} currency={row.currency as Currency} />,
     },
+    {
+      key: "plan",
+      header: "Plan",
+      cell: (row) =>
+        row.matchedPlanName ?? <span className="text-destructive">unavailable</span>,
+    },
     { key: "status", header: "Status", cell: (row) => <StatusBadge status={row.status} /> },
     {
       key: "actions",
@@ -72,8 +78,8 @@ export default function AdminDepositsPage() {
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">Deposits</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Review proof of payment before approving -- approval credits the user's balance
-          immediately.
+          Review proof of payment before approving -- approval credits the user&apos;s balance and
+          immediately starts the matched investment.
         </p>
       </div>
 
