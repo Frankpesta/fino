@@ -66,14 +66,19 @@
  * (hero banners, sidebars, footer) independent of the light/dark toggle.
  */
 :root {
-  --background: oklch(0.985 0.012 95);
-  --foreground: oklch(0.22 0.025 155);
-  --card: oklch(0.995 0.008 95);
-  --card-foreground: oklch(0.22 0.025 155);
-  --popover: oklch(0.995 0.008 95);
-  --popover-foreground: oklch(0.22 0.025 155);
-  --primary: oklch(0.4 0.11 155);
-  --primary-foreground: oklch(0.98 0.01 95);
+  /* Deliberately local stacks: the app stays polished and renders correctly
+     even in restricted deployments where external font hosts are unavailable. */
+  --font-geist-sans: "Plus Jakarta Sans", "Aptos", "Segoe UI", system-ui, sans-serif;
+  --font-geist-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  --font-heading: "Plus Jakarta Sans", "Aptos", "Segoe UI", system-ui, sans-serif;
+  --background: oklch(0.975 0.012 100);
+  --foreground: oklch(0.235 0.025 145);
+  --card: oklch(0.995 0.006 100);
+  --card-foreground: oklch(0.235 0.025 145);
+  --popover: oklch(0.995 0.006 100);
+  --popover-foreground: oklch(0.235 0.025 145);
+  --primary: oklch(0.42 0.105 145);
+  --primary-foreground: oklch(0.98 0.01 100);
   --secondary: oklch(0.94 0.018 140);
   --secondary-foreground: oklch(0.25 0.03 155);
   --muted: oklch(0.95 0.012 90);
@@ -102,19 +107,19 @@
   --sidebar-accent-foreground: oklch(0.38 0.09 70);
   --sidebar-border: oklch(0.89 0.014 90);
   --sidebar-ring: oklch(0.4 0.11 155);
-  --ink: oklch(0.16 0.02 155);
+  --ink: oklch(0.19 0.03 145);
   --ink-foreground: oklch(0.97 0.01 90);
 }
 
 .dark {
-  --background: oklch(0.15 0.016 155);
-  --foreground: oklch(0.96 0.01 90);
-  --card: oklch(0.19 0.018 155);
-  --card-foreground: oklch(0.96 0.01 90);
-  --popover: oklch(0.19 0.018 155);
-  --popover-foreground: oklch(0.96 0.01 90);
-  --primary: oklch(0.72 0.15 155);
-  --primary-foreground: oklch(0.16 0.03 155);
+  --background: oklch(0.17 0.017 145);
+  --foreground: oklch(0.96 0.01 100);
+  --card: oklch(0.21 0.02 145);
+  --card-foreground: oklch(0.96 0.01 100);
+  --popover: oklch(0.21 0.02 145);
+  --popover-foreground: oklch(0.96 0.01 100);
+  --primary: oklch(0.75 0.13 145);
+  --primary-foreground: oklch(0.16 0.025 145);
   --secondary: oklch(0.25 0.02 150);
   --secondary-foreground: oklch(0.96 0.01 90);
   --muted: oklch(0.23 0.018 150);

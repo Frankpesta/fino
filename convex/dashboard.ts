@@ -1,4 +1,5 @@
 import { query } from "./_generated/server";
+import { v } from "convex/values";
 import { requireVerifiedUser } from "./model/authz";
 import { getAllCachedUsdRates } from "./model/exchangeRates";
 import { addMoney, round8 } from "../lib/money";
@@ -132,5 +133,50 @@ export const getStats = query({
       totalApprovedWithdrawalsUsd: sumUsd(totalApprovedWithdrawals, rates),
       totalReferralCommissionUsd: sumUsd(totalReferralCommission, rates),
     };
+  },
+});
+
+// A bounded, ledger-backed view for the client chart. `now` is supplied by the
+// client instead of reading the wall clock in a query, keeping this reactive
+// query cacheable while still giving the UI an honest rolling 30-day window.
+export const getTrend = query({
+  args: { now: v.number() },
+  handler: async (ctx, args) => {
+    const user = await requireVerifiedUser(ctx);
+    const start = args.now - 30 * 24 * 60 * 60 * 1000;
+    const [transactions, rates] = await Promise.all([
+      ctx.db
+        .query("transactions")
+        .withIndex("by_userId_and_createdAt", (q) =>
+          q.eq("userId", user._id).gte("createdAt", start),
+        )
+        .order("asc")
+        .take(500),
+      getAllCachedUsdRates(ctx),
+    ]);
+
+    const days = Array.from({ length: 30 }, (_, offset) => {
+      const date = new Date(start + offset * 24 * 60 * 60 * 1000);
+      return {
+        date: date.toISOString().slice(0, 10),
+        label: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        inflow: 0,
+        outflow: 0,
+      };
+    });
+    const byDate = new Map(days.map((day) => [day.date, day]));
+    for (const tx of transactions) {
+      const day = byDate.get(new Date(tx.createdAt).toISOString().slice(0, 10));
+      if (!day) continue;
+      const usd = tx.amount * (rates[tx.currency as Currency] ?? 0);
+      if (tx.type === "withdrawal" || tx.type === "investment") day.outflow += usd;
+      else day.inflow += usd;
+    }
+    return days.map((day) => ({
+      ...day,
+      inflow: round8(day.inflow),
+      outflow: round8(day.outflow),
+      net: round8(day.inflow - day.outflow),
+    }));
   },
 });

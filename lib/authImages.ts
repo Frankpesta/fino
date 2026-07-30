@@ -41,9 +41,16 @@ export const AUTH_IMAGES: Record<"signIn" | "signUp" | "verifyEmail", AuthImage>
 };
 
 export const MARKETING_IMAGES = {
-  home: unsplash("1518546305927-5a555bb7020d", "w=2200&q=85&auto=format&fit=crop"),
-  about: unsplash("1551830820-330a71b99659", "w=1800&q=80&auto=format&fit=crop"),
-  affiliate: unsplash("1556761175-b413da4baf72", "w=1800&q=80&auto=format&fit=crop"),
-  contact: unsplash("1497366754035-f200968a6e72", "w=1800&q=80&auto=format&fit=crop"),
-  faq: unsplash("1516321318423-f06f85e504b3", "w=1800&q=80&auto=format&fit=crop"),
+  home: unsplash("1526374965328-7f61d4dc18c5", "w=2200&q=85&auto=format&fit=crop"),
+  about: unsplash("1611974789855-9c2a0a7236a3", "w=1800&q=80&auto=format&fit=crop"),
+  affiliate: unsplash("1559526324-4b87b5e36e44", "w=1800&q=80&auto=format&fit=crop"),
+  contact: unsplash("1554224155-6726b3ff858f", "w=1800&q=80&auto=format&fit=crop"),
+  faq: unsplash("1642790106117-e829e14a795f", "w=1800&q=80&auto=format&fit=crop"),
+  services: {
+    crypto: unsplash("1642104704074-907c0698cbd9", "w=1200&q=80&auto=format&fit=crop"),
+    stocks: unsplash("1590283603385-17ffb3a7f29f", "w=1200&q=80&auto=format&fit=crop"),
+    hedge: unsplash("1556761175-4b87b5e36e44", "w=1200&q=80&auto=format&fit=crop"),
+    portfolio: unsplash("1554224154-26032ffc0d07", "w=1200&q=80&auto=format&fit=crop"),
+    forex: unsplash("1611974714022-21c9ca0ea8f0", "w=1200&q=80&auto=format&fit=crop"),
+  },
 } as const;

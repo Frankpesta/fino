@@ -41,7 +41,7 @@ export function DataTable<T extends { _id: string }>({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-lg border", className)}>
+    <div className={cn("overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-sm", className)}>
       <Table>
         <TableHeader>
           <TableRow>

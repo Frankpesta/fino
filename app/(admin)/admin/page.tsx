@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { StatCard } from "@/components/ui/stat-card";
@@ -8,8 +9,14 @@ import { AmountDisplay } from "@/components/ui/amount-display";
 import { CurrencyIcon } from "@/components/ui/currency-icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PortfolioTrendChart } from "@/components/dashboard/portfolio-trend-chart";
+import { UserGrowthChart } from "@/components/dashboard/user-growth-chart";
 import { CURRENCIES, type Currency } from "@/lib/currency";
 import { Users, ArrowDownToLine, ArrowUpFromLine, ShieldCheck, WalletCards } from "lucide-react";
+
+function getDashboardStartTime() {
+  return Date.now();
+}
 
 function CurrencyBreakdown({ values }: { values: Record<Currency, number> }) {
   return (
@@ -28,7 +35,9 @@ function CurrencyBreakdown({ values }: { values: Record<Currency, number> }) {
 }
 
 export default function AdminDashboardPage() {
+  const [trendNow] = useState(getDashboardStartTime);
   const stats = useQuery(api.admin.getStats);
+  const trend = useQuery(api.admin.getTrend, { now: trendNow });
   const auditLog = useQuery(api.admin.listAuditLog, { limit: 10 });
 
   return (
@@ -123,6 +132,34 @@ export default function AdminDashboardPage() {
             )
           }
         />
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <Card className="overflow-hidden border-primary/10 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b px-5 py-5 sm:px-6">
+            <div>
+              <p className="font-heading text-xl font-semibold tracking-tight">Platform cash movement</p>
+              <p className="mt-1 text-sm text-muted-foreground">Approved deposits vs. withdrawals · last 30 days</p>
+            </div>
+            <div className="flex gap-3 text-xs font-medium">
+              <span className="flex items-center gap-1.5"><i className="size-2 rounded-full bg-[#62B97C]" /> Deposits</span>
+              <span className="flex items-center gap-1.5"><i className="size-2 rounded-full bg-[#D6A057]" /> Withdrawals</span>
+            </div>
+          </div>
+          <CardContent className="px-2 pb-4 pt-3 sm:px-4">
+            {trend === undefined ? <Skeleton className="h-64 w-full sm:h-72" /> : <PortfolioTrendChart data={trend} />}
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden border-primary/10 shadow-sm">
+          <div className="border-b px-5 py-5 sm:px-6">
+            <p className="font-heading text-xl font-semibold tracking-tight">User growth</p>
+            <p className="mt-1 text-sm text-muted-foreground">New signups per day · last 30 days</p>
+          </div>
+          <CardContent className="px-2 pb-4 pt-3 sm:px-4">
+            {trend === undefined ? <Skeleton className="h-64 w-full sm:h-72" /> : <UserGrowthChart data={trend} />}
+          </CardContent>
+        </Card>
       </div>
 
       <Card className="overflow-hidden shadow-sm">
