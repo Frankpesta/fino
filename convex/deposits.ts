@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireAdmin, requireVerifiedUser } from "./model/authz";
@@ -19,15 +20,22 @@ const depositStatusValidator = v.union(
 );
 
 export const listMine = query({
-  args: { status: v.optional(depositStatusValidator) },
+  args: { status: v.optional(depositStatusValidator), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     const user = await requireVerifiedUser(ctx);
-    const deposits = await ctx.db
-      .query("deposits")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .collect();
-    return args.status ? deposits.filter((d) => d.status === args.status) : deposits;
+    return args.status
+      ? await ctx.db
+          .query("deposits")
+          .withIndex("by_userId_and_status", (q) =>
+            q.eq("userId", user._id).eq("status", args.status!),
+          )
+          .order("desc")
+          .paginate(args.paginationOpts)
+      : await ctx.db
+          .query("deposits")
+          .withIndex("by_userId", (q) => q.eq("userId", user._id))
+          .order("desc")
+          .paginate(args.paginationOpts);
   },
 });
 
@@ -196,19 +204,19 @@ export const generateUploadUrl = mutation({
 // --- Admin (Phase 4) ---
 
 export const listForAdmin = query({
-  args: { status: v.optional(depositStatusValidator) },
+  args: { status: v.optional(depositStatusValidator), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const deposits = args.status
+    const result = args.status
       ? await ctx.db
           .query("deposits")
           .withIndex("by_status", (q) => q.eq("status", args.status!))
           .order("desc")
-          .collect()
-      : await ctx.db.query("deposits").order("desc").collect();
+          .paginate(args.paginationOpts)
+      : await ctx.db.query("deposits").order("desc").paginate(args.paginationOpts);
 
-    return await Promise.all(
-      deposits.map(async (deposit) => {
+    const page = await Promise.all(
+      result.page.map(async (deposit) => {
         const user = await ctx.db.get(deposit.userId);
         const plan = deposit.matchedPlanId ? await ctx.db.get(deposit.matchedPlanId) : null;
         return {
@@ -218,6 +226,7 @@ export const listForAdmin = query({
         };
       }),
     );
+    return { ...result, page };
   },
 });
 

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 import { requireAdmin, requireVerifiedUser } from "./model/authz";
 import { logAdminAction } from "./model/audit";
 import { currencyValidator } from "./schema";
@@ -59,6 +59,7 @@ export const create = mutation({
     rateInterval: rateIntervalValidator,
     durationDays: v.number(),
     payoutStyle: payoutStyleValidator,
+    features: v.optional(v.array(v.string())),
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -73,6 +74,7 @@ export const create = mutation({
 
     const planId = await ctx.db.insert("investmentPlans", {
       ...args,
+      features: args.features ?? [],
       isActive: true,
       sortOrder: args.sortOrder ?? 0,
       createdBy: admin._id,
@@ -99,6 +101,7 @@ export const update = mutation({
     minDepositUsd: v.optional(v.number()),
     maxDepositUsd: v.optional(v.number()),
     rate: v.optional(v.number()),
+    features: v.optional(v.array(v.string())),
     sortOrder: v.optional(v.number()),
     isActive: v.optional(v.boolean()),
   },
@@ -140,5 +143,94 @@ export const deactivate = mutation({
       before: { isActive: true },
       after: { isActive: false },
     });
+  },
+});
+
+const DEFAULT_PLAN_FEATURES = [
+  "100% Capital Protection",
+  "Automated Payout",
+  "A.I Integrated Trading",
+  "10% Referral Bonus",
+  "Daily Turnover",
+  "Renewable",
+];
+
+// Terms as handed down by the operator (see task description) -- not
+// fabricated. Run once via `npx convex run investmentPlans:seedDefaultPlans`.
+const DEFAULT_PLANS = [
+  {
+    name: "Starter Plan",
+    description: "An entry-level tier for investors getting started with A.I-managed trading.",
+    minDepositUsd: 200,
+    maxDepositUsd: 1499,
+    rate: 0.015,
+    durationDays: 5,
+  },
+  {
+    name: "Apex Plan",
+    description: "A mid-tier plan for investors ready to scale up their daily turnover.",
+    minDepositUsd: 1500,
+    maxDepositUsd: 6999,
+    rate: 0.02,
+    durationDays: 5,
+  },
+  {
+    name: "Thrive Plan",
+    description: "A higher-yield tier for investors committing larger capital.",
+    minDepositUsd: 7000,
+    maxDepositUsd: 14999,
+    rate: 0.03,
+    durationDays: 5,
+  },
+  {
+    name: "Premium Plan",
+    description: "The top tier, built for substantial capital over an extended term.",
+    minDepositUsd: 15000,
+    maxDepositUsd: 1000000,
+    rate: 0.05,
+    durationDays: 31,
+  },
+] as const;
+
+// Idempotent by plan name -- safe to re-run; existing plans are left as-is
+// so admin edits made after seeding are never clobbered.
+export const seedDefaultPlans = internalMutation({
+  args: { adminUserId: v.optional(v.id("users")) },
+  handler: async (ctx, args) => {
+    const admin = args.adminUserId
+      ? await ctx.db.get(args.adminUserId)
+      : await ctx.db
+          .query("users")
+          .withIndex("by_role", (q) => q.eq("role", "admin"))
+          .first();
+    if (!admin) throw new Error("No admin user found -- create one first or pass adminUserId");
+
+    const existing = await ctx.db.query("investmentPlans").collect();
+    const existingNames = new Set(existing.map((p) => p.name));
+
+    const inserted: string[] = [];
+    for (let i = 0; i < DEFAULT_PLANS.length; i++) {
+      const plan = DEFAULT_PLANS[i];
+      if (existingNames.has(plan.name)) continue;
+      await ctx.db.insert("investmentPlans", {
+        name: plan.name,
+        description: plan.description,
+        minDepositUsd: plan.minDepositUsd,
+        maxDepositUsd: plan.maxDepositUsd,
+        currency: "ANY",
+        rate: plan.rate,
+        rateInterval: "daily",
+        durationDays: plan.durationDays,
+        payoutStyle: "accrual",
+        features: [...DEFAULT_PLAN_FEATURES],
+        isActive: true,
+        sortOrder: i,
+        createdBy: admin._id,
+        createdAt: Date.now(),
+      });
+      inserted.push(plan.name);
+    }
+
+    return { inserted, skipped: DEFAULT_PLANS.map((p) => p.name).filter((n) => !inserted.includes(n)) };
   },
 });

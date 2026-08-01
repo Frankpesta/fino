@@ -4,15 +4,23 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { StatCard } from "@/components/ui/stat-card";
 import { AmountDisplay } from "@/components/ui/amount-display";
 import { CurrencyIcon } from "@/components/ui/currency-icon";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PortfolioTrendChart } from "@/components/dashboard/portfolio-trend-chart";
 import { UserGrowthChart } from "@/components/dashboard/user-growth-chart";
+import { DashboardMetric } from "@/components/dashboard/dashboard-metric";
 import { CURRENCIES, type Currency } from "@/lib/currency";
-import { Users, ArrowDownToLine, ArrowUpFromLine, ShieldCheck, WalletCards } from "lucide-react";
+import {
+  Users,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ShieldCheck,
+  WalletCards,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
 
 function getDashboardStartTime() {
   return Date.now();
@@ -54,85 +62,87 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Link href="/admin/deposits">
-          <Card className="overflow-hidden border-primary/10 bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg">
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-              <span className="text-sm text-muted-foreground">Pending deposits</span>
-              <span className="rounded-xl bg-primary/10 p-2 text-primary"><ArrowDownToLine className="size-4" /></span>
-            </CardHeader>
-            <CardContent>
-              <div className="font-heading text-3xl font-semibold tabular-nums">
-                {stats === undefined ? <Skeleton className="h-8 w-12" /> : stats.pendingDepositCount}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">Needs review</p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/admin/withdrawals">
-          <Card className="overflow-hidden border-primary/10 bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg">
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
-              <span className="text-sm text-muted-foreground">Pending withdrawals</span>
-              <span className="rounded-xl bg-primary/10 p-2 text-primary"><ArrowUpFromLine className="size-4" /></span>
-            </CardHeader>
-            <CardContent>
-              <div className="font-heading text-3xl font-semibold tabular-nums">
-                {stats === undefined ? (
-                  <Skeleton className="h-8 w-12" />
-                ) : (
-                  stats.pendingWithdrawalCount
-                )}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">Needs review</p>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          className="border-primary/10 shadow-sm"
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DashboardMetric
+          accent
           label="Total users"
           icon={<Users className="size-4" />}
-          value={
-            stats === undefined ? <Skeleton className="h-8 w-12" /> : stats.totalUsers
-          }
+          value={stats === undefined ? <Skeleton className="h-9 w-16 bg-white/10" /> : stats.totalUsers}
+          caption="Registered accounts"
         />
-        <StatCard
-          className="border-primary/10 shadow-sm"
-          label="Deposited (all time)"
-          value={
-            stats ? (
-              <CurrencyBreakdown values={stats.totalDepositedAllTime} />
-            ) : (
-              <Skeleton className="h-24 w-full" />
-            )
-          }
+        <DashboardMetric
+          label="Total deposits"
+          icon={<ArrowDownToLine className="size-4" />}
+          value={stats === undefined ? <Skeleton className="h-9 w-16" /> : stats.totalDepositCount}
+          caption="All deposit requests ever submitted"
         />
-        <StatCard
-          className="border-primary/10 shadow-sm"
-          label="Withdrawn (all time)"
-          value={
-            stats ? (
-              <CurrencyBreakdown values={stats.totalWithdrawn} />
-            ) : (
-              <Skeleton className="h-24 w-full" />
-            )
-          }
+        <DashboardMetric
+          label="Total withdrawals"
+          icon={<ArrowUpFromLine className="size-4" />}
+          value={stats === undefined ? <Skeleton className="h-9 w-16" /> : stats.totalWithdrawalCount}
+          caption="All withdrawal requests ever submitted"
         />
-        <StatCard
-          className="border-primary/10 shadow-sm"
+        <DashboardMetric
           label="Currently invested"
           icon={<WalletCards className="size-4" />}
-          value={
-            stats ? (
-              <CurrencyBreakdown values={stats.totalInvested} />
-            ) : (
-              <Skeleton className="h-24 w-full" />
-            )
-          }
+          value={stats ? <CurrencyBreakdown values={stats.totalInvested} /> : <Skeleton className="h-24 w-full" />}
+          caption="Principal in active investments"
         />
-      </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Link href="/admin/deposits">
+          <DashboardMetric
+            label="Pending deposits"
+            icon={<Clock className="size-4" />}
+            value={stats === undefined ? <Skeleton className="h-9 w-12" /> : stats.pendingDepositCount}
+            caption="Needs review"
+            className="transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
+          />
+        </Link>
+        <Link href="/admin/deposits">
+          <DashboardMetric
+            label="Approved deposits"
+            icon={<CheckCircle2 className="size-4" />}
+            value={stats === undefined ? <Skeleton className="h-9 w-12" /> : stats.approvedDepositCount}
+            caption="Credited to user balances"
+            className="transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
+          />
+        </Link>
+        <Link href="/admin/withdrawals">
+          <DashboardMetric
+            label="Pending withdrawals"
+            icon={<Clock className="size-4" />}
+            value={stats === undefined ? <Skeleton className="h-9 w-12" /> : stats.pendingWithdrawalCount}
+            caption="Needs review"
+            className="transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
+          />
+        </Link>
+        <Link href="/admin/withdrawals">
+          <DashboardMetric
+            label="Approved withdrawals"
+            icon={<CheckCircle2 className="size-4" />}
+            value={stats === undefined ? <Skeleton className="h-9 w-12" /> : stats.approvedWithdrawalCount}
+            caption="Paid out to users"
+            className="transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
+          />
+        </Link>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2">
+        <DashboardMetric
+          label="Deposited (all time)"
+          icon={<ArrowDownToLine className="size-4" />}
+          value={stats ? <CurrencyBreakdown values={stats.totalDepositedAllTime} /> : <Skeleton className="h-24 w-full" />}
+          caption="Approved deposits, by asset"
+        />
+        <DashboardMetric
+          label="Withdrawn (all time)"
+          icon={<ArrowUpFromLine className="size-4" />}
+          value={stats ? <CurrencyBreakdown values={stats.totalWithdrawn} /> : <Skeleton className="h-24 w-full" />}
+          caption="Approved withdrawals, by asset"
+        />
+      </section>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <Card className="overflow-hidden border-primary/10 shadow-sm">

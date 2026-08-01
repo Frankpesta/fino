@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
-import { Mail, CheckCircle2, MessageCircle } from "lucide-react";
+import { CircleCheck, Clock, Mail, CheckCircle2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,15 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { MARKETING_IMAGES } from "@/lib/authImages";
 
 const FALLBACK_SUPPORT_EMAIL = "support@fino.app";
+
+const SUPPORT_TOPICS = [
+  "Account inquiries",
+  "Technical support",
+  "Platform guidance",
+  "Partnership questions",
+  "General information",
+  "Security concerns",
+];
 
 export default function ContactPage() {
   const settings = useQuery(api.platformSettings.get);
@@ -55,7 +64,7 @@ export default function ContactPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <PageHero title="Start with a real conversation." eyebrow="Contact Fino" description="Questions about the platform, plans, or your account? Send us a note and we will respond by email." image={MARKETING_IMAGES.contact} />
+      <PageHero title="We'd love to hear from you." eyebrow="Contact Fino" description="Whether you have questions about our platform, need technical assistance, or want to learn more about our AI-managed trading solutions, our team is here to help." image={MARKETING_IMAGES.contact} />
 
       <main className="flex-1">
         <section className="mx-auto max-w-5xl px-6 py-20">
@@ -148,19 +157,37 @@ export default function ContactPage() {
               )}
             </div>
 
-            <div className="h-fit rounded-3xl border border-primary/15 bg-ink p-7 text-ink-foreground shadow-xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Direct line</p><h3 className="mt-3 font-heading text-xl font-semibold">Talk to us</h3>
-              <div className="mt-4 flex items-start gap-3">
-                <Mail className="mt-0.5 size-4 shrink-0 text-primary" />
-                <div>
-                  <p className="text-xs text-white/50">Email</p>
-                  <a
-                    href={`mailto:${supportEmail}`}
-                    className="text-sm font-medium text-white hover:underline"
-                  >
-                    {supportEmail}
-                  </a>
+            <div className="space-y-6">
+              <div className="h-fit rounded-3xl border border-primary/15 bg-ink p-7 text-ink-foreground shadow-xl">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">Direct line</p><h3 className="mt-3 font-heading text-xl font-semibold">Talk to us</h3>
+                <div className="mt-4 flex items-start gap-3">
+                  <Mail className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <div>
+                    <p className="text-xs text-white/50">Email</p>
+                    <a
+                      href={`mailto:${supportEmail}`}
+                      className="text-sm font-medium text-white hover:underline"
+                    >
+                      {supportEmail}
+                    </a>
+                  </div>
                 </div>
+                <div className="mt-4 flex items-start gap-3">
+                  <Clock className="mt-0.5 size-4 shrink-0 text-primary" />
+                  <p className="text-xs text-white/60">We typically respond within one business day.</p>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border bg-card p-7 shadow-sm">
+                <h3 className="font-heading text-lg font-semibold">We can help with</h3>
+                <ul className="mt-4 space-y-2.5">
+                  {SUPPORT_TOPICS.map((topic) => (
+                    <li key={topic} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                      <CircleCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                      {topic}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           </div>

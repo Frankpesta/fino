@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { paginationOptsValidator } from "convex/server";
 import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireAdmin, requireVerifiedUser } from "./model/authz";
@@ -16,15 +17,22 @@ const withdrawalStatusValidator = v.union(
 );
 
 export const listMine = query({
-  args: { status: v.optional(withdrawalStatusValidator) },
+  args: { status: v.optional(withdrawalStatusValidator), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     const user = await requireVerifiedUser(ctx);
-    const withdrawals = await ctx.db
-      .query("withdrawals")
-      .withIndex("by_userId", (q) => q.eq("userId", user._id))
-      .order("desc")
-      .collect();
-    return args.status ? withdrawals.filter((w) => w.status === args.status) : withdrawals;
+    return args.status
+      ? await ctx.db
+          .query("withdrawals")
+          .withIndex("by_userId_and_status", (q) =>
+            q.eq("userId", user._id).eq("status", args.status!),
+          )
+          .order("desc")
+          .paginate(args.paginationOpts)
+      : await ctx.db
+          .query("withdrawals")
+          .withIndex("by_userId", (q) => q.eq("userId", user._id))
+          .order("desc")
+          .paginate(args.paginationOpts);
   },
 });
 
@@ -117,23 +125,24 @@ export const cancel = mutation({
 // --- Admin (Phase 4) ---
 
 export const listForAdmin = query({
-  args: { status: v.optional(withdrawalStatusValidator) },
+  args: { status: v.optional(withdrawalStatusValidator), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const withdrawals = args.status
+    const result = args.status
       ? await ctx.db
           .query("withdrawals")
           .withIndex("by_status", (q) => q.eq("status", args.status!))
           .order("desc")
-          .collect()
-      : await ctx.db.query("withdrawals").order("desc").collect();
+          .paginate(args.paginationOpts)
+      : await ctx.db.query("withdrawals").order("desc").paginate(args.paginationOpts);
 
-    return await Promise.all(
-      withdrawals.map(async (withdrawal) => {
+    const page = await Promise.all(
+      result.page.map(async (withdrawal) => {
         const user = await ctx.db.get(withdrawal.userId);
         return { ...withdrawal, userEmail: user?.email ?? "unknown" };
       }),
     );
+    return { ...result, page };
   },
 });
 

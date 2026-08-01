@@ -8,7 +8,7 @@ import type { Doc } from "@/convex/_generated/dataModel";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CircleCheck } from "lucide-react";
 import { InvestDialog } from "@/components/invest-dialog";
 
 export default function PlansPage() {
@@ -68,6 +68,16 @@ export default function PlansPage() {
                   <dt className="text-muted-foreground">Payout</dt>
                   <dd>{plan.payoutStyle === "accrual" ? "Daily accrual" : "End of term"}</dd>
                 </dl>
+                {plan.features && plan.features.length > 0 && (
+                  <ul className="space-y-1.5 text-sm">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2">
+                        <CircleCheck className="size-3.5 shrink-0 text-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                   <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
                   Returns are not guaranteed and depend on trading performance.

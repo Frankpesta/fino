@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { PaginationFooter } from "@/components/ui/pagination-footer";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { AmountDisplay } from "@/components/ui/amount-display";
 import { CurrencyIcon } from "@/components/ui/currency-icon";
@@ -25,7 +26,15 @@ const TABS: { value: DepositStatus | "all"; label: string; empty: string }[] = [
 
 export default function AdminDepositsPage() {
   const [tab, setTab] = useState<DepositStatus | "all">("pending");
-  const deposits = useQuery(api.deposits.listForAdmin, tab === "all" ? {} : { status: tab });
+  const {
+    results: deposits,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.deposits.listForAdmin,
+    tab === "all" ? {} : { status: tab },
+    { initialNumItems: 20 },
+  );
   const [reviewing, setReviewing] = useState<Deposit | null>(null);
 
   const columns: DataTableColumn<Deposit>[] = [
@@ -93,7 +102,19 @@ export default function AdminDepositsPage() {
         </TabsList>
         {TABS.map((t) => (
           <TabsContent key={t.value} value={t.value}>
-            <DataTable columns={columns} data={deposits} emptyState={t.empty} />
+            <DataTable
+              columns={columns}
+              data={status === "LoadingFirstPage" ? undefined : deposits}
+              emptyState={t.empty}
+              footer={
+                <PaginationFooter
+                  status={status}
+                  loadMore={loadMore}
+                  loadedCount={deposits.length}
+                  itemLabel="deposit"
+                />
+              }
+            />
           </TabsContent>
         ))}
       </Tabs>

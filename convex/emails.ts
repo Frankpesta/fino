@@ -18,6 +18,7 @@ import { SecurityNoticeEmail } from "../emails/SecurityNoticeEmail";
 import { PasswordResetCodeEmail } from "../emails/PasswordResetCodeEmail";
 import { CronFailureAlertEmail } from "../emails/CronFailureAlertEmail";
 import { ContactMessageEmail } from "../emails/ContactMessageEmail";
+import { AdminMessageEmail } from "../emails/AdminMessageEmail";
 
 // Deposit submitted has no preference toggle in the spec's list (only
 // approved/rejected do) -- it always sends, same as the security-critical
@@ -293,6 +294,25 @@ export const sendCronFailureAlert = internalAction({
         userId: admin._id,
       });
     }
+  },
+});
+
+// Admin-composed email, sent one-at-a-time to either a single user
+// (adminMessages.sendToUser) or every non-admin user (adminMessages.broadcast
+// ToAllUsers) -- always sends, no preference check, since it's an explicit
+// one-off the admin chose to send rather than a background system category.
+export const sendAdminMessage = internalAction({
+  args: { userId: v.id("users"), subject: v.string(), message: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.runQuery(internal.profile.getUserInternal, { userId: args.userId });
+    if (!user) return;
+    await deliverEmail(ctx, {
+      to: user.email,
+      subject: args.subject,
+      react: AdminMessageEmail({ subject: args.subject, message: args.message }),
+      template: "admin_message",
+      userId: user._id,
+    });
   },
 });
 

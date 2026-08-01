@@ -33,7 +33,7 @@ export function SidebarLogout({ email, collapsed }: { email?: string; collapsed:
         disabled={pending}
         title={collapsed ? "Log out" : undefined}
         className={cn(
-          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/55 transition-colors hover:bg-white/[0.08] hover:text-white disabled:opacity-60",
+          "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-400/80 transition-colors hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60",
           collapsed && "justify-center px-0",
         )}
       >

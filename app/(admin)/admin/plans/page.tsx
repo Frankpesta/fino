@@ -80,6 +80,15 @@ export default function AdminPlansPage() {
                   <dt className="text-muted-foreground">Payout</dt>
                   <dd>{plan.payoutStyle === "accrual" ? "Daily" : "End of term"}</dd>
                 </dl>
+                {plan.features && plan.features.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {plan.features.map((feature) => (
+                      <Badge key={feature} variant="outline" className="font-normal">
+                        {feature}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" size="sm" onClick={() => setEditing(plan)}>
                     Edit

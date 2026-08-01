@@ -49,6 +49,7 @@ export function PlanFormDialog({
     plan?.maxDepositUsd ? String(plan.maxDepositUsd) : "",
   );
   const [payoutStyle, setPayoutStyle] = useState(plan?.payoutStyle ?? "accrual");
+  const [features, setFeatures] = useState((plan?.features ?? []).join("\n"));
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -78,6 +79,11 @@ export function PlanFormDialog({
       return;
     }
 
+    const parsedFeatures = features
+      .split("\n")
+      .map((f) => f.trim())
+      .filter(Boolean);
+
     setIsSubmitting(true);
     try {
       if (isEdit) {
@@ -88,6 +94,7 @@ export function PlanFormDialog({
           minDepositUsd: parsedMin,
           maxDepositUsd: parsedMax,
           rate: parsedRate,
+          features: parsedFeatures,
         });
       } else {
         await create({
@@ -100,6 +107,7 @@ export function PlanFormDialog({
           rateInterval: rateInterval as "daily" | "weekly" | "monthly",
           durationDays: parsedDuration,
           payoutStyle: payoutStyle as "accrual" | "end_of_term",
+          features: parsedFeatures,
         });
       }
       onOpenChange(false);
@@ -236,6 +244,17 @@ export function PlanFormDialog({
               </Select>
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="plan-features">Features (one per line)</Label>
+            <Textarea
+              id="plan-features"
+              rows={4}
+              placeholder={"100% Capital Protection\nAutomated Payout\nRenewable"}
+              value={features}
+              onChange={(e) => setFeatures(e.target.value)}
+            />
+          </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 

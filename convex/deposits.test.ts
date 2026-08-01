@@ -253,12 +253,13 @@ describe("deposits.listMine", () => {
       });
     });
 
-    const pending = await asUser.query(api.deposits.listMine, { status: "pending" });
-    expect(pending).toHaveLength(1);
-    expect(pending[0].amount).toBe(10);
+    const paginationOpts = { numItems: 10, cursor: null };
+    const pending = await asUser.query(api.deposits.listMine, { status: "pending", paginationOpts });
+    expect(pending.page).toHaveLength(1);
+    expect(pending.page[0].amount).toBe(10);
 
-    const all = await asUser.query(api.deposits.listMine, {});
-    expect(all).toHaveLength(2);
+    const all = await asUser.query(api.deposits.listMine, { paginationOpts });
+    expect(all.page).toHaveLength(2);
   });
 });
 

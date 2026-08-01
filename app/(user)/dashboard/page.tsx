@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { PortfolioTrendChart } from "@/components/dashboard/portfolio-trend-chart";
+import { DashboardMetric } from "@/components/dashboard/dashboard-metric";
 import { type Currency } from "@/lib/currency";
 import {
   ArrowDownLeft,
@@ -34,19 +35,6 @@ function formatUsd(value: number) {
 
 function getDashboardStartTime() {
   return Date.now();
-}
-
-function DashboardMetric({ label, value, caption, icon, accent = false }: { label: string; value: string | React.ReactNode; caption: string; icon: React.ReactNode; accent?: boolean }) {
-  return (
-    <div className={`rounded-2xl border p-5 ${accent ? "border-[#bfe2c4]/35 bg-[#193a28] text-[#fbf7ed]" : "border-border/80 bg-card"}`}>
-      <div className="flex items-center justify-between">
-        <p className={`text-sm ${accent ? "text-white/55" : "text-muted-foreground"}`}>{label}</p>
-        <span className={`flex size-9 items-center justify-center rounded-xl ${accent ? "bg-[#aee6ad]/15 text-[#aee6ad]" : "bg-primary/10 text-primary"}`}>{icon}</span>
-      </div>
-      <p className="mt-6 font-heading text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
-      <p className={`mt-2 text-xs ${accent ? "text-white/55" : "text-muted-foreground"}`}>{caption}</p>
-    </div>
-  );
 }
 
 export default function DashboardPage() {

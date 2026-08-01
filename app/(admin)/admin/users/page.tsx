@@ -2,28 +2,41 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { Input } from "@/components/ui/input";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { PaginationFooter } from "@/components/ui/pagination-footer";
 import { Badge } from "@/components/ui/badge";
 import { USER_STATUS_STYLES } from "@/components/ui/status-badge";
 import { AmountDisplay } from "@/components/ui/amount-display";
 import { CURRENCIES, type Currency } from "@/lib/currency";
+import { Search } from "lucide-react";
 
 type AdminUser = Doc<"users"> & { referralCount: number };
 
 export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
-  const users = useQuery(api.users.listForAdmin, { search: search || undefined });
+  const {
+    results: users,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.users.listForAdmin,
+    { search: search || undefined },
+    { initialNumItems: 20 },
+  );
 
   const columns: DataTableColumn<AdminUser>[] = [
     {
       key: "email",
       header: "Email",
       cell: (row) => (
-        <Link href={`/admin/users/${row._id}`} className="font-medium hover:underline">
+        <Link href={`/admin/users/${row._id}`} className="flex items-center gap-2.5 font-medium hover:underline">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+            {(row.name ?? row.email).slice(0, 1).toUpperCase()}
+          </span>
           {row.email}
         </Link>
       ),
@@ -69,17 +82,27 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">Users</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{users?.length ?? "…"} total</p>
+        <p className="mt-1 text-sm text-muted-foreground">Every registered account on the platform.</p>
       </div>
 
-      <Input
-        placeholder="Search by email…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="max-w-sm"
-      />
+      <div className="relative max-w-sm">
+        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search by email or name…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-8"
+        />
+      </div>
 
-      <DataTable columns={columns} data={users} emptyState="No users match your search." />
+      <DataTable
+        columns={columns}
+        data={status === "LoadingFirstPage" ? undefined : users}
+        emptyState="No users match your search."
+        footer={
+          <PaginationFooter status={status} loadMore={loadMore} loadedCount={users.length} itemLabel="user" />
+        }
+      />
     </div>
   );
 }

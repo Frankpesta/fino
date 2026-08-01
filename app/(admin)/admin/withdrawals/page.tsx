@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { PaginationFooter } from "@/components/ui/pagination-footer";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { AmountDisplay } from "@/components/ui/amount-display";
 import { CurrencyIcon } from "@/components/ui/currency-icon";
@@ -25,9 +26,14 @@ const TABS: { value: WithdrawalStatus | "all"; label: string; empty: string }[] 
 
 export default function AdminWithdrawalsPage() {
   const [tab, setTab] = useState<WithdrawalStatus | "all">("pending");
-  const withdrawals = useQuery(
+  const {
+    results: withdrawals,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
     api.withdrawals.listForAdmin,
     tab === "all" ? {} : { status: tab },
+    { initialNumItems: 20 },
   );
   const [reviewing, setReviewing] = useState<Withdrawal | null>(null);
 
@@ -102,7 +108,19 @@ export default function AdminWithdrawalsPage() {
         </TabsList>
         {TABS.map((t) => (
           <TabsContent key={t.value} value={t.value}>
-            <DataTable columns={columns} data={withdrawals} emptyState={t.empty} />
+            <DataTable
+              columns={columns}
+              data={status === "LoadingFirstPage" ? undefined : withdrawals}
+              emptyState={t.empty}
+              footer={
+                <PaginationFooter
+                  status={status}
+                  loadMore={loadMore}
+                  loadedCount={withdrawals.length}
+                  itemLabel="withdrawal"
+                />
+              }
+            />
           </TabsContent>
         ))}
       </Tabs>

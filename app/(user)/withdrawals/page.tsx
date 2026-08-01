@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { PaginationFooter } from "@/components/ui/pagination-footer";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { AmountDisplay } from "@/components/ui/amount-display";
 import { CurrencyIcon } from "@/components/ui/currency-icon";
@@ -30,7 +31,15 @@ const TABS: { value: WithdrawalStatus | "all"; label: string; empty: string }[] 
 
 export default function WithdrawalsPage() {
   const [tab, setTab] = useState<WithdrawalStatus | "all">("pending");
-  const withdrawals = useQuery(api.withdrawals.listMine, tab === "all" ? {} : { status: tab });
+  const {
+    results: withdrawals,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.withdrawals.listMine,
+    tab === "all" ? {} : { status: tab },
+    { initialNumItems: 20 },
+  );
   const cancelWithdrawal = useMutation(api.withdrawals.cancel);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
@@ -134,7 +143,19 @@ export default function WithdrawalsPage() {
         </TabsList>
         {TABS.map((t) => (
           <TabsContent key={t.value} value={t.value}>
-            <DataTable columns={columns} data={withdrawals} emptyState={t.empty} />
+            <DataTable
+              columns={columns}
+              data={status === "LoadingFirstPage" ? undefined : withdrawals}
+              emptyState={t.empty}
+              footer={
+                <PaginationFooter
+                  status={status}
+                  loadMore={loadMore}
+                  loadedCount={withdrawals.length}
+                  itemLabel="withdrawal"
+                />
+              }
+            />
           </TabsContent>
         ))}
       </Tabs>

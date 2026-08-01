@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 export interface DataTableColumn<T> {
   key: string;
   header: string;
-  cell: (row: T) => ReactNode;
+  cell: (row: T, index: number) => ReactNode;
   className?: string;
 }
 
@@ -33,58 +33,66 @@ export function DataTable<T extends { _id: string }>({
   columns,
   data,
   emptyState,
+  footer,
   className,
 }: {
   columns: DataTableColumn<T>[];
   data: T[] | undefined;
   emptyState: ReactNode;
+  footer?: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={cn("overflow-x-auto rounded-2xl border border-border/80 bg-card shadow-sm", className)}>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {columns.map((col) => (
-              <TableHead key={col.key} className={col.className}>
-                {col.header}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data === undefined ? (
-            Array.from({ length: 3 }).map((_, i) => (
-              <TableRow key={i}>
-                {columns.map((col) => (
-                  <TableCell key={col.key}>
-                    <Skeleton className="h-4 w-full" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : data.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={columns.length}
-                className="h-32 text-center text-muted-foreground"
-              >
-                {emptyState}
-              </TableCell>
+    <div className={cn("overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm", className)}>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              {columns.map((col) => (
+                <TableHead
+                  key={col.key}
+                  className={cn("bg-muted/40 text-xs font-semibold uppercase tracking-wide text-muted-foreground", col.className)}
+                >
+                  {col.header}
+                </TableHead>
+              ))}
             </TableRow>
-          ) : (
-            data.map((row) => (
-              <TableRow key={row._id}>
-                {columns.map((col) => (
-                  <TableCell key={col.key} className={col.className}>
-                    {col.cell(row)}
-                  </TableCell>
-                ))}
+          </TableHeader>
+          <TableBody>
+            {data === undefined ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <TableRow key={i}>
+                  {columns.map((col) => (
+                    <TableCell key={col.key}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : data.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-32 text-center text-muted-foreground"
+                >
+                  {emptyState}
+                </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              data.map((row, index) => (
+                <TableRow key={row._id} className="odd:bg-muted/[0.15]">
+                  {columns.map((col) => (
+                    <TableCell key={col.key} className={cn("py-3", col.className)}>
+                      {col.cell(row, index)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      {footer}
     </div>
   );
 }

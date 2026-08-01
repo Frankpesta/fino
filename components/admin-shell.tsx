@@ -3,33 +3,41 @@
 import { type ReactNode, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "convex/react";
 import {
   LayoutDashboard,
   ArrowDownToLine,
   ArrowUpFromLine,
   Users,
   TrendingUp,
+  Mail,
   Settings,
   ChevronsLeft,
   ChevronsRight,
   ShieldCheck,
+  Bell,
   Menu,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/lib/store";
+import { api } from "@/convex/_generated/api";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarLogout } from "@/components/sidebar-logout";
+import { AdminFooter } from "@/components/admin-footer";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/deposits", label: "Deposits", icon: ArrowDownToLine },
   { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/messages", label: "Messages", icon: Mail },
   { href: "/admin/plans", label: "Plans", icon: TrendingUp },
   { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/linked-wallets", label: "Linked Wallets", icon: Wallet },
 ];
 
 export function AdminShell({ email, children }: { email?: string; children: ReactNode }) {
@@ -37,10 +45,14 @@ export function AdminShell({ email, children }: { email?: string; children: Reac
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const stats = useQuery(api.admin.getStats);
+  const pendingCount = stats ? stats.pendingDepositCount + stats.pendingWithdrawalCount : undefined;
 
   function isActive(href: string) {
     return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
   }
+
+  const currentPage = NAV_ITEMS.find((item) => isActive(item.href));
 
   function renderNav(collapsedNav: boolean, onNavigate?: () => void) {
     return (
@@ -124,7 +136,7 @@ export function AdminShell({ email, children }: { email?: string; children: Reac
       </Sheet>
 
       <div className="flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
-        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b bg-background/85 px-4 backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-20 flex h-[72px] shrink-0 items-center justify-between border-b border-border/70 bg-background/85 px-4 backdrop-blur-xl sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 md:hidden">
             <Button
               variant="ghost"
@@ -136,12 +148,35 @@ export function AdminShell({ email, children }: { email?: string; children: Reac
             </Button>
             <span className="font-heading text-lg font-semibold">Fino Admin</span>
           </div>
-          <span className="hidden text-sm text-muted-foreground md:inline">{email}</span>
+          <div className="hidden md:block">
+            <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Admin console</p>
+            <p className="mt-0.5 text-sm font-medium">{currentPage?.label ?? "Dashboard"}</p>
+          </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative hidden rounded-full text-muted-foreground sm:inline-flex"
+              aria-label="Pending review items"
+              render={
+                <Link href="/admin/withdrawals">
+                  <Bell className="size-4" />
+                  {!!pendingCount && (
+                    <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[9px] font-semibold text-destructive-foreground">
+                      {pendingCount > 9 ? "9+" : pendingCount}
+                    </span>
+                  )}
+                </Link>
+              }
+            />
             <ThemeToggle />
+            <span className="hidden size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary sm:flex">
+              {email?.slice(0, 1).toUpperCase() ?? "A"}
+            </span>
           </div>
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <AdminFooter />
       </div>
     </div>
   );

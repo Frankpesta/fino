@@ -78,7 +78,7 @@ export function DepositReviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg lg:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Deposit from {deposit.userEmail}</DialogTitle>
           <DialogDescription>

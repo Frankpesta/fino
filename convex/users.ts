@@ -1,6 +1,9 @@
 import { v } from "convex/values";
+import { paginationOptsValidator, type PaginationResult } from "convex/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internalQuery, mutation, query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
 import { requireAdmin } from "./model/authz";
 import { logAdminAction } from "./model/audit";
 import { currencyValidator } from "./schema";
@@ -17,24 +20,44 @@ export const getCurrentUser = query({
 
 // --- Admin (Phase 4) ---
 
-export const listForAdmin = query({
-  args: { search: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const allUsers = await ctx.db.query("users").order("desc").collect();
-    const filtered = args.search
-      ? allUsers.filter((u) => u.email.toLowerCase().includes(args.search!.toLowerCase()))
-      : allUsers;
+const MAX_SEARCH_RESULTS = 50;
 
-    return await Promise.all(
-      filtered.map(async (u) => {
-        const referrals = await ctx.db
-          .query("referrals")
-          .withIndex("by_referrerId", (q) => q.eq("referrerId", u._id))
-          .collect();
-        return { ...u, referralCount: referrals.length };
-      }),
-    );
+async function withReferralCounts(ctx: QueryCtx, users: Doc<"users">[]) {
+  return await Promise.all(
+    users.map(async (u) => {
+      const referrals = await ctx.db
+        .query("referrals")
+        .withIndex("by_referrerId", (q) => q.eq("referrerId", u._id))
+        .collect();
+      return { ...u, referralCount: referrals.length };
+    }),
+  );
+}
+
+// Two modes, since free-text substring search can't run through a cursor
+// index: with no `search`, this is a real cursor-paginated browse of every
+// user (`.paginate()`); with `search`, it scans + filters in-memory and
+// returns everything that matches (capped at MAX_SEARCH_RESULTS) as a single
+// already-`isDone` page -- still a valid `usePaginatedQuery` result shape,
+// it just never has a next page to load.
+export const listForAdmin = query({
+  args: { paginationOpts: paginationOptsValidator, search: v.optional(v.string()) },
+  handler: async (ctx, args): Promise<PaginationResult<Doc<"users"> & { referralCount: number }>> => {
+    await requireAdmin(ctx);
+
+    const term = args.search?.trim().toLowerCase();
+    if (term) {
+      const allUsers = await ctx.db.query("users").order("desc").collect();
+      const filtered = allUsers
+        .filter((u) => u.email.toLowerCase().includes(term))
+        .slice(0, MAX_SEARCH_RESULTS);
+      const page = await withReferralCounts(ctx, filtered);
+      return { page, isDone: true, continueCursor: "" };
+    }
+
+    const result = await ctx.db.query("users").order("desc").paginate(args.paginationOpts);
+    const page = await withReferralCounts(ctx, result.page);
+    return { ...result, page };
   },
 });
 

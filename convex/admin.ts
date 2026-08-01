@@ -50,8 +50,12 @@ export const getStats = query({
       totalInvested: sumByCurrency(
         activeInvestments.map((i) => ({ currency: i.currency, amount: i.principal })),
       ),
+      totalDepositCount: deposits.length,
       pendingDepositCount: pendingDeposits.length,
+      approvedDepositCount: approvedDeposits.length,
+      totalWithdrawalCount: withdrawals.length,
       pendingWithdrawalCount: pendingWithdrawals.length,
+      approvedWithdrawalCount: approvedWithdrawals.length,
     };
   },
 });

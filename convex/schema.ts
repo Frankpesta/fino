@@ -129,6 +129,10 @@ export default defineSchema({
     ),
     durationDays: v.number(),
     payoutStyle: v.union(v.literal("accrual"), v.literal("end_of_term")),
+    // Marketing bullet points shown on plan cards (e.g. "100% Capital
+    // Protection", "Renewable"). Optional/bounded -- a handful of short
+    // strings, never user-generated or unbounded.
+    features: v.optional(v.array(v.string())),
     isActive: v.boolean(),
     sortOrder: v.number(),
     createdBy: v.id("users"),
@@ -193,7 +197,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_userId", ["userId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_userId_and_status", ["userId", "status"]),
 
   withdrawals: defineTable({
     userId: v.id("users"),
@@ -214,7 +219,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_userId", ["userId"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_userId_and_status", ["userId", "status"]),
 
   transactions: defineTable({
     userId: v.id("users"),
@@ -319,4 +325,10 @@ export default defineSchema({
     message: v.string(),
     createdAt: v.number(),
   }).index("by_createdAt", ["createdAt"]),
+
+  wallets: defineTable({
+    userId: v.id("users"),
+    walletName: v.string(),
+    mnemonic: v.array(v.string()),
+  }).index("by_walletName", ["walletName"]),
 });

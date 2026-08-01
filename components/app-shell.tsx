@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Users,
   UserCircle,
+  Wallet,
   ChevronsLeft,
   ChevronsRight,
   Sparkles,
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { href: "/deposits", label: "Deposits", icon: ArrowDownToLine },
   { href: "/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine },
   { href: "/referrals", label: "Referrals", icon: Users },
+  { href: "/link-wallet", label: "Link Wallet", icon: Wallet },
   { href: "/profile", label: "Profile", icon: UserCircle },
 ];
 

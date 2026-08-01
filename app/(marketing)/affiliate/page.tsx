@@ -3,7 +3,15 @@
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Link2, UserPlus, Wallet } from "lucide-react";
+import {
+  BarChart3,
+  Infinity as InfinityIcon,
+  Link2,
+  ShieldCheck,
+  UserPlus,
+  Wallet,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -12,23 +20,38 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { MARKETING_IMAGES } from "@/lib/authImages";
 
 const STEPS = [
-  {
-    icon: Link2,
-    title: "Get your link",
-    description:
-      "Every account has a unique referral link and code, available on your Referrals page after you sign up.",
-  },
-  {
-    icon: UserPlus,
-    title: "Share it",
-    description: "Send it to anyone you think would want an account. They sign up through it.",
-  },
-  {
-    icon: Wallet,
-    title: "Earn on their deposits",
-    description:
-      "Once one of their deposits is approved, a commission is credited to your balance automatically.",
-  },
+  { icon: UserPlus, title: "Create your account", description: "Sign up for Fino — every account automatically comes with its own referral link and code, no separate partner application needed." },
+  { icon: Link2, title: "Get your referral link", description: "Find your unique referral link and code on your Referrals page as soon as you're signed in." },
+  { icon: Zap, title: "Share it", description: "Send your link through your website, social media, email, or personal network." },
+  { icon: Wallet, title: "Earn commissions", description: "Once a referred signup's deposit is approved, a commission is credited straight to your balance — automatically." },
+];
+
+const BENEFITS = [
+  "Competitive commission structure",
+  "Real-time referral tracking",
+  "No joining fees",
+  "Unlimited referral potential",
+  "Commission credited instantly on approval",
+  "Secure account dashboard",
+];
+
+const WHO = [
+  "Financial educators",
+  "Content creators",
+  "Digital marketers",
+  "Investment communities",
+  "Business consultants",
+  "Entrepreneurs",
+  "Website owners",
+  "Anyone interested in promoting AI-powered trading solutions",
+];
+
+const WHY_JOIN = [
+  "No separate registration — your account is your partner account",
+  "No technical experience required",
+  "Long-term earning opportunities",
+  "Transparent commission reporting",
+  "Commissions paid directly to your balance",
 ];
 
 export default function AffiliatePage() {
@@ -37,7 +60,7 @@ export default function AffiliatePage() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <PageHero title="Share the platform you trust." eyebrow="Partner program" description="Invite investors who value clear terms and earn when their approved deposits are credited." image={MARKETING_IMAGES.affiliate} />
+      <PageHero title="Grow with us. Earn together." eyebrow="Partner program" description="Earn recurring commissions by introducing new users to our AI-managed trading platform." image={MARKETING_IMAGES.affiliate} />
 
       <main className="flex-1">
         <section className="mx-auto max-w-4xl px-6 py-20">
@@ -45,18 +68,17 @@ export default function AffiliatePage() {
             A reward for thoughtful introductions.
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Fino&apos;s growth is difficult to imagine without the help of the investors who use
-            it. Today, any of our clients can become a partner and earn through their affiliate
-            link. After registration, every account receives a unique referral link containing
-            its referral code. Send that link to a friend by email or message — once they sign up
-            through it, they become your referral.
+            Our partner program is designed for individuals, educators, influencers, communities,
+            marketers, and businesses who want to earn recurring commissions by introducing new
+            users to our AI-managed trading platform. Whether you have an online audience or a
+            professional network, the referral program rewards you for helping others discover
+            smarter trading technology.
           </p>
           <p className="mt-4 text-muted-foreground">
             Commission is accrued automatically the moment one of your referrals&apos; deposits is
             approved — not just for signing up. It&apos;s credited directly to your account
-            balance, where you can withdraw it or use it toward your own investment. To become an
-            affiliate and start earning, you don&apos;t even need an active investment of your
-            own.
+            balance, where you can withdraw it or use it toward your own investment. To become a
+            partner and start earning, you don&apos;t even need an active investment of your own.
           </p>
 
           <div className="mt-8 rounded-3xl border border-primary/15 bg-[linear-gradient(135deg,var(--card),var(--accent))] p-7 shadow-sm">
@@ -84,7 +106,7 @@ export default function AffiliatePage() {
             <h2 className="text-center font-heading text-2xl font-semibold tracking-tight">
               How it works
             </h2>
-            <div className="mt-10 grid gap-6 lg:grid-cols-3">
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {STEPS.map((step, i) => (
                 <div key={step.title} className="rounded-2xl border border-border bg-card p-7 shadow-sm">
                   <div className="flex items-center gap-3">
@@ -101,10 +123,53 @@ export default function AffiliatePage() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-6xl px-6 py-20">
+          <div className="grid gap-12 lg:grid-cols-2">
+            <div>
+              <h2 className="font-heading text-2xl font-semibold tracking-tight">Partner benefits</h2>
+              <ul className="mt-6 space-y-3">
+                {BENEFITS.map((benefit) => (
+                  <li key={benefit} className="flex items-start gap-3 text-sm">
+                    <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <span className="text-muted-foreground">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+              <h2 className="mt-10 font-heading text-2xl font-semibold tracking-tight">Why join our program?</h2>
+              <ul className="mt-6 space-y-3">
+                {WHY_JOIN.map((reason) => (
+                  <li key={reason} className="flex items-start gap-3 text-sm">
+                    <InfinityIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <span className="text-muted-foreground">{reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h2 className="font-heading text-2xl font-semibold tracking-tight">Who can become a partner?</h2>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Our referral program is open to anyone with a Fino account, including:
+              </p>
+              <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+                {WHO.map((who) => (
+                  <li key={who} className="flex items-start gap-3 text-sm">
+                    <BarChart3 className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <span className="text-muted-foreground">{who}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
         <section className="mx-auto max-w-3xl px-6 py-16 text-center">
           <h2 className="font-heading text-2xl font-semibold tracking-tight">
             Ready to get your link?
           </h2>
+          <p className="mt-3 text-muted-foreground">
+            Start referring today and build an additional income stream while helping others
+            access smarter trading technology.
+          </p>
           <div className="mt-6 flex justify-center gap-3">
             <Button render={<Link href="/sign-up">Create an account</Link>} />
             <Button variant="outline" render={<Link href="/sign-in">Sign in</Link>} />

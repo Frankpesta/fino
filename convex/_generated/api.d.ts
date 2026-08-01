@@ -9,6 +9,7 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as adminMessages from "../adminMessages.js";
 import type * as auth from "../auth.js";
 import type * as contact from "../contact.js";
 import type * as crons from "../crons.js";
@@ -38,6 +39,7 @@ import type * as referrals from "../referrals.js";
 import type * as transactions from "../transactions.js";
 import type * as twoFactorRateLimit from "../twoFactorRateLimit.js";
 import type * as users from "../users.js";
+import type * as wallet from "../wallet.js";
 import type * as withdrawals from "../withdrawals.js";
 
 import type {
@@ -48,6 +50,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  adminMessages: typeof adminMessages;
   auth: typeof auth;
   contact: typeof contact;
   crons: typeof crons;
@@ -77,6 +80,7 @@ declare const fullApi: ApiFromModules<{
   transactions: typeof transactions;
   twoFactorRateLimit: typeof twoFactorRateLimit;
   users: typeof users;
+  wallet: typeof wallet;
   withdrawals: typeof withdrawals;
 }>;
 

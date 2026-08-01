@@ -7,7 +7,6 @@
 export interface AuthImage {
   src: string;
   alt: string;
-  credit: string;
   quote: string;
   attribution: string;
 }
@@ -18,24 +17,21 @@ function unsplash(id: string, params = "w=1800&q=80&auto=format&fit=crop") {
 
 export const AUTH_IMAGES: Record<"signIn" | "signUp" | "verifyEmail", AuthImage> = {
   signIn: {
-    src: unsplash("1762194859810-003063d4c85d"),
-    alt: "Illuminated skyscrapers of a financial district at night",
-    credit: "Massimiliano Morosinotto",
-    quote: "Capital deserves the same discipline as the trades it funds.",
+    src: unsplash("1611974789855-9c2a0a7236a3"),
+    alt: "Candlestick chart tracking live market price action",
+    quote: "Every trade begins with the same discipline: analyze, verify, execute.",
     attribution: "Fino",
   },
   signUp: {
-    src: unsplash("1751200065697-4461cc2b43cb"),
-    alt: "A dimly lit desk with a laptop and monitor",
-    credit: "Zoshua Colah",
-    quote: "Every account starts with the same standard: verified, audited, accountable.",
+    src: unsplash("1642104704074-907c0698cbd9"),
+    alt: "Multiple monitors displaying live crypto market charts",
+    quote: "Your account, backed by data-driven strategy from day one.",
     attribution: "Fino",
   },
   verifyEmail: {
-    src: unsplash("1750800676784-d68e2f2533de"),
-    alt: "Abstract blue, teal, and purple gradient",
-    credit: "Nat Fleming",
-    quote: "One more step. Precision first, always.",
+    src: unsplash("1611974714022-21c9ca0ea8f0"),
+    alt: "Trader reviewing forex charts across dual monitors",
+    quote: "One more step before the algorithms get to work.",
     attribution: "Fino",
   },
 };

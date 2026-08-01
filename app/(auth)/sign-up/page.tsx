@@ -49,7 +49,7 @@ function SignUpForm() {
           Create your account
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          We&apos;ll send a 6-digit code to verify your email before you can deposit or invest.
+          We&apos;ll send a 6-digit code to verify your email before you can proceed to access the platform.
         </p>
       </div>
 
@@ -62,6 +62,7 @@ function SignUpForm() {
             autoComplete="email"
             required
             value={email}
+            className="py-5 shadow-none rounded-lg"
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
@@ -74,6 +75,7 @@ function SignUpForm() {
             required
             minLength={8}
             value={password}
+            className="py-5 shadow-none rounded-lg"
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>

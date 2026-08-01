@@ -101,6 +101,7 @@ export default function SignInPage() {
                 autoComplete="email"
                 required
                 value={email}
+                className="py-5 shadow-none rounded-lg"
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
@@ -120,6 +121,7 @@ export default function SignInPage() {
                 autoComplete="current-password"
                 required
                 value={password}
+                className="py-5 shadow-none rounded-lg"
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
