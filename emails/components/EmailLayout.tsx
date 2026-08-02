@@ -1,4 +1,4 @@
-import { Html, Head, Preview, Body, Container, Section, Text, Hr, Link } from "@react-email/components";
+import { Html, Head, Preview, Body, Container, Section, Text, Hr, Link, Img } from "@react-email/components";
 import type { ReactNode } from "react";
 import * as styles from "../styles";
 
@@ -21,7 +21,7 @@ export function EmailLayout({
       <Preview>{previewText}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Text style={styles.brand}>Zypherex</Text>
+          <Img src={`${APP_URL}/logo.png`} width="72" height="72" alt="Zypherex" style={styles.logo} />
           {children}
           <Hr style={styles.hr} />
           <Section>

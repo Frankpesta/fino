@@ -45,6 +45,12 @@ export const brand: CSSProperties = {
   margin: "0 0 24px",
 };
 
+export const logo: CSSProperties = {
+  display: "block",
+  margin: "0 0 24px",
+  borderRadius: 12,
+};
+
 export const heading: CSSProperties = {
   color: colors.text,
   fontSize: 20,
