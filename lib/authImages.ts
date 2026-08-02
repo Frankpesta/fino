@@ -9,6 +9,7 @@ export interface AuthImage {
   alt: string;
   quote: string;
   attribution: string;
+  credit: string;
 }
 
 function unsplash(id: string, params = "w=1800&q=80&auto=format&fit=crop") {
@@ -21,18 +22,21 @@ export const AUTH_IMAGES: Record<"signIn" | "signUp" | "verifyEmail", AuthImage>
     alt: "Candlestick chart tracking live market price action",
     quote: "Every trade begins with the same discipline: analyze, verify, execute.",
     attribution: "Zypherex",
+    credit: "Unsplash",
   },
   signUp: {
     src: unsplash("1642104704074-907c0698cbd9"),
     alt: "Multiple monitors displaying live crypto market charts",
     quote: "Your account, backed by data-driven strategy from day one.",
     attribution: "Zypherex",
+    credit: "Unsplash",
   },
   verifyEmail: {
     src: unsplash("1611974714022-21c9ca0ea8f0"),
     alt: "Trader reviewing forex charts across dual monitors",
     quote: "One more step before the algorithms get to work.",
     attribution: "Zypherex",
+    credit: "Unsplash",
   },
 };
 
