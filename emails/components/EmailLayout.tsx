@@ -6,7 +6,7 @@ const APP_URL = process.env.SITE_URL ?? "http://localhost:3000";
 // Real-venture placeholder until real support details are configured -- see
 // docs note on real-venture placeholders (matches the pattern used for
 // platform wallets / plan terms elsewhere in this build).
-const SUPPORT_CONTACT = process.env.RESEND_SUPPORT_CONTACT ?? "[support email not yet configured]";
+const SUPPORT_CONTACT = process.env.RESEND_SUPPORT_CONTACT ?? "support@zypherex.com";
 
 export function EmailLayout({
   previewText,
@@ -21,7 +21,7 @@ export function EmailLayout({
       <Preview>{previewText}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Text style={styles.brand}>Fino</Text>
+          <Text style={styles.brand}>Zypherex</Text>
           {children}
           <Hr style={styles.hr} />
           <Section>

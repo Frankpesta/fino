@@ -5,7 +5,7 @@ import { AUTH_IMAGES } from "@/lib/authImages";
 
 export function PageHero({
   title,
-  eyebrow = "Fino / Private markets",
+  eyebrow = "Zypherex / Private markets",
   description,
   image,
 }: {

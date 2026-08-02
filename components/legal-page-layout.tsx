@@ -17,7 +17,7 @@ export function LegalPageLayout({
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <PageHero title={title} eyebrow="Fino / Legal" description="The policies and terms that govern how the platform operates." />
+      <PageHero title={title} eyebrow="Zypherex / Legal" description="The policies and terms that govern how the platform operates." />
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-16">
         <p className="text-sm text-muted-foreground">Last updated: {lastUpdated}</p>

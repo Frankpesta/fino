@@ -14,7 +14,7 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { PageHero } from "@/components/marketing/page-hero";
 import { MARKETING_IMAGES } from "@/lib/authImages";
 
-const FALLBACK_SUPPORT_EMAIL = "support@fino.app";
+const FALLBACK_SUPPORT_EMAIL = "support@zypherex.com";
 
 const SUPPORT_TOPICS = [
   "Account inquiries",
@@ -64,7 +64,7 @@ export default function ContactPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
-      <PageHero title="We'd love to hear from you." eyebrow="Contact Fino" description="Whether you have questions about our platform, need technical assistance, or want to learn more about our AI-managed trading solutions, our team is here to help." image={MARKETING_IMAGES.contact} />
+      <PageHero title="We'd love to hear from you." eyebrow="Contact Zypherex" description="Whether you have questions about our platform, need technical assistance, or want to learn more about our AI-managed trading solutions, our team is here to help." image={MARKETING_IMAGES.contact} />
 
       <main className="flex-1">
         <section className="mx-auto max-w-5xl px-6 py-20">

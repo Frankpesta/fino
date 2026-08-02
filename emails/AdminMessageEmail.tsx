@@ -13,7 +13,7 @@ export function AdminMessageEmail({ subject, message }: { subject: string; messa
           {paragraph}
         </Text>
       ))}
-      <Text style={styles.mutedText}>This message was sent to you by the Fino team.</Text>
+      <Text style={styles.mutedText}>This message was sent to you by the Zypherex team.</Text>
     </EmailLayout>
   );
 }

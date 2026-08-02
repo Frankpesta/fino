@@ -65,11 +65,11 @@ describe("generateTotpUri", () => {
     const uri = generateTotpUri({
       secretBase32: "JBSWY3DPEHPK3PXP",
       accountName: "user@example.com",
-      issuer: "Fino",
+      issuer: "Zypherex",
     });
-    expect(uri).toMatch(/^otpauth:\/\/totp\/Fino%3Auser%40example\.com\?/);
+    expect(uri).toMatch(/^otpauth:\/\/totp\/Zypherex%3Auser%40example\.com\?/);
     expect(uri).toContain("secret=JBSWY3DPEHPK3PXP");
-    expect(uri).toContain("issuer=Fino");
+    expect(uri).toContain("issuer=Zypherex");
     expect(uri).toContain("digits=6");
     expect(uri).toContain("period=30");
   });

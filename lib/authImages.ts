@@ -20,19 +20,19 @@ export const AUTH_IMAGES: Record<"signIn" | "signUp" | "verifyEmail", AuthImage>
     src: unsplash("1611974789855-9c2a0a7236a3"),
     alt: "Candlestick chart tracking live market price action",
     quote: "Every trade begins with the same discipline: analyze, verify, execute.",
-    attribution: "Fino",
+    attribution: "Zypherex",
   },
   signUp: {
     src: unsplash("1642104704074-907c0698cbd9"),
     alt: "Multiple monitors displaying live crypto market charts",
     quote: "Your account, backed by data-driven strategy from day one.",
-    attribution: "Fino",
+    attribution: "Zypherex",
   },
   verifyEmail: {
     src: unsplash("1611974714022-21c9ca0ea8f0"),
     alt: "Trader reviewing forex charts across dual monitors",
     quote: "One more step before the algorithms get to work.",
-    attribution: "Fino",
+    attribution: "Zypherex",
   },
 };
 

@@ -14,7 +14,6 @@ import {
   Settings,
   ChevronsLeft,
   ChevronsRight,
-  ShieldCheck,
   Bell,
   Menu,
   Wallet,
@@ -28,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { SidebarLogout } from "@/components/sidebar-logout";
 import { AdminFooter } from "@/components/admin-footer";
+import { Logo } from "@/components/logo";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -90,11 +90,10 @@ export function AdminShell({ email, children }: { email?: string; children: Reac
           collapsed ? "w-16" : "w-60",
         )}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-4">
+        <div className="flex h-24 shrink-0 items-center justify-between border-b border-white/10 px-4">
           {!collapsed && (
-            <Link href="/admin" className="flex items-center gap-2 font-heading text-lg font-semibold tracking-tight">
-              <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground"><ShieldCheck className="size-3.5" /></span>
-              Fino
+            <Link href="/admin" className="flex items-center gap-2">
+              <Logo size={64} />
               <Badge variant="outline" className="border-white/20 bg-white/5 text-[10px] font-normal text-white/75">
                 Admin
               </Badge>
@@ -117,14 +116,13 @@ export function AdminShell({ email, children }: { email?: string; children: Reac
 
       <Sheet open={mobileOpen} onOpenChange={(open) => setMobileOpen(open)}>
         <SheetContent side="left" className="flex flex-col border-white/10 bg-ink p-0 text-ink-foreground">
-          <div className="flex h-16 shrink-0 items-center border-b border-white/10 px-4">
+          <div className="flex h-24 shrink-0 items-center border-b border-white/10 px-4">
             <Link
               href="/admin"
               onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2 font-heading text-lg font-semibold tracking-tight"
+              className="flex items-center gap-2"
             >
-              <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground"><ShieldCheck className="size-3.5" /></span>
-              Fino
+              <Logo size={64} />
               <Badge variant="outline" className="border-white/20 bg-white/5 text-[10px] font-normal text-white/75">
                 Admin
               </Badge>
@@ -146,7 +144,7 @@ export function AdminShell({ email, children }: { email?: string; children: Reac
             >
               <Menu className="size-5" />
             </Button>
-            <span className="font-heading text-lg font-semibold">Fino Admin</span>
+            <span className="flex items-center gap-2"><Logo size={48} /><span className="font-heading text-lg font-semibold">Admin</span></span>
           </div>
           <div className="hidden md:block">
             <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Admin console</p>

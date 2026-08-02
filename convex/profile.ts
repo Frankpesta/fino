@@ -50,7 +50,7 @@ export const cancelAccountDeletionRequest = mutation({
 // Web Crypto (crypto.subtle), which Convex's default V8-isolate runtime
 // supports directly. No need for the Node runtime here.
 
-const TOTP_ISSUER = "Fino";
+const TOTP_ISSUER = "Zypherex";
 
 // Generates a new secret but does NOT enable 2FA yet -- that only happens
 // once the user proves they've actually added it to an authenticator app by

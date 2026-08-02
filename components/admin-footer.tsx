@@ -15,7 +15,7 @@ export function AdminFooter() {
           <Link href="/terms" className="transition-colors hover:text-foreground">
             Terms
           </Link>
-          <span>© {new Date().getFullYear()} Fino</span>
+          <span>© {new Date().getFullYear()} Zypherex</span>
         </div>
       </div>
     </footer>

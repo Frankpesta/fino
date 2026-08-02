@@ -7,7 +7,7 @@ import type { Id } from "../_generated/dataModel";
 // Placeholder-but-real domain, matching the rest of this build's approach to
 // unconfigured real-venture details (see docs note on real-venture
 // placeholders): swap once a sending domain is verified with Resend.
-const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS ?? "Fino <onboarding@resend.dev>";
+const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS ?? "Zypherex <notifications@updates.zypherex.com>";
 
 /**
  * Shared send path for every transactional email. Resend's SDK renders the

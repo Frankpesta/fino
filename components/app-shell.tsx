@@ -13,7 +13,6 @@ import {
   Wallet,
   ChevronsLeft,
   ChevronsRight,
-  Sparkles,
   Menu,
   Bell,
 } from "lucide-react";
@@ -24,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { DashboardFooter } from "@/components/dashboard-footer";
 import { SidebarLogout } from "@/components/sidebar-logout";
+import { Logo } from "@/components/logo";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -84,11 +84,10 @@ export function AppShell({ email, children }: { email?: string; children: ReactN
           collapsed ? "w-16" : "w-60",
         )}
       >
-        <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-4">
+        <div className="flex h-24 shrink-0 items-center justify-between border-b border-white/10 px-4">
           {!collapsed && (
-            <Link href="/dashboard" className="flex items-center gap-2 font-heading text-lg font-semibold tracking-tight">
-              <span className="flex size-7 items-center justify-center rounded-lg bg-[#bce6b2] text-[#183725]"><Sparkles className="size-3.5" /></span>
-              Fino
+            <Link href="/dashboard" className="flex items-center">
+              <Logo size={64} />
             </Link>
           )}
           <Button
@@ -108,14 +107,13 @@ export function AppShell({ email, children }: { email?: string; children: ReactN
 
       <Sheet open={mobileOpen} onOpenChange={(open) => setMobileOpen(open)}>
         <SheetContent side="left" className="flex flex-col border-white/10 bg-ink p-0 text-ink-foreground">
-          <div className="flex h-16 shrink-0 items-center border-b border-white/10 px-4">
+          <div className="flex h-24 shrink-0 items-center border-b border-white/10 px-4">
             <Link
               href="/dashboard"
               onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-2 font-heading text-lg font-semibold tracking-tight"
+              className="flex items-center"
             >
-              <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Sparkles className="size-3.5" /></span>
-              Fino
+              <Logo size={64} />
             </Link>
           </div>
           {renderNav(false, () => setMobileOpen(false))}
@@ -134,13 +132,13 @@ export function AppShell({ email, children }: { email?: string; children: ReactN
             >
               <Menu className="size-5" />
             </Button>
-            <span className="font-heading text-lg font-semibold">Fino</span>
+            <Logo size={48} />
           </div>
           <div className="hidden md:block"><p className="text-[10px] font-semibold uppercase tracking-[.16em] text-muted-foreground">Secure workspace</p><p className="mt-0.5 text-sm font-medium">Your portfolio</p></div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="hidden rounded-full text-muted-foreground sm:inline-flex" aria-label="Notifications"><Bell className="size-4" /></Button>
             <ThemeToggle />
-            <span className="hidden size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary sm:flex">{email?.slice(0, 1).toUpperCase() ?? "F"}</span>
+            <span className="hidden size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary sm:flex">{email?.slice(0, 1).toUpperCase() ?? "Z"}</span>
           </div>
         </header>
         <main className="flex-1 bg-[radial-gradient(circle_at_90%_0%,color-mix(in_oklab,var(--primary)_8%,transparent),transparent_25rem)] p-4 sm:p-6 lg:p-8">{children}</main>

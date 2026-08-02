@@ -100,7 +100,7 @@ export const sendWelcomeEmail = internalAction({
     if (!user) return;
     await deliverEmail(ctx, {
       to: user.email,
-      subject: "Welcome to Fino",
+      subject: "Welcome to Zypherex",
       react: WelcomeEmail(),
       template: "welcome",
       userId: user._id,

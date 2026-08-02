@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowUpRight, Sparkles } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 const QUICK_LINKS = [
   { href: "/", label: "Home" }, { href: "/about", label: "Our approach" },
@@ -15,14 +16,14 @@ export function SiteFooter() {
     <div className="mx-auto max-w-6xl px-6 py-14">
       <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
         <div className="lg:col-span-2">
-          <span className="flex items-center gap-2 font-heading text-xl font-semibold"><span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground"><Sparkles className="size-3.5" /></span>Fino</span>
+          <Logo size={84} />
           <p className="mt-4 max-w-sm text-sm leading-6 text-white/55">A considered way to access digital-asset strategies, with clear terms, deliberate review, and an account you can read at a glance.</p>
         </div>
         <FooterList title="Explore" links={QUICK_LINKS} />
         <FooterList title="Trust & legal" links={LEGAL_LINKS} />
       </div>
       <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
-        <p>© {new Date().getFullYear()} Fino. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Zypherex. All rights reserved.</p>
         <p>Digital-asset investing carries risk. Target rates are not guarantees.</p>
       </div>
     </div>

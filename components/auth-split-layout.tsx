@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import type { AuthImage } from "@/lib/authImages";
+import { Logo } from "@/components/logo";
 
 gsap.registerPlugin(useGSAP);
 
@@ -86,12 +87,8 @@ export function AuthSplitLayout({
         <div className="absolute inset-0 bg-gradient-to-r from-black/45 via-transparent to-transparent" />
 
         <div ref={panelRef} className="relative flex h-full flex-col justify-between p-10 xl:p-14">
-          <Link
-            data-animate-panel
-            href="/"
-            className="font-heading text-xl font-semibold tracking-tight text-white"
-          >
-            Fino
+          <Link data-animate-panel href="/" className="flex items-center">
+            <Logo size={84} />
           </Link>
 
           <div data-animate-panel className="max-w-md">
@@ -112,8 +109,8 @@ export function AuthSplitLayout({
       </div>
 
       <div className="flex w-full flex-col justify-center px-6 py-16 sm:px-12 lg:w-1/2 lg:px-20">
-        <Link href="/" className="mb-12 font-heading text-xl font-semibold lg:hidden">
-          Fino
+        <Link href="/" className="mb-12 flex items-center lg:hidden">
+          <Logo size={76} />
         </Link>
         <div ref={contentRef} className="mx-auto w-full max-w-sm">
           {children}

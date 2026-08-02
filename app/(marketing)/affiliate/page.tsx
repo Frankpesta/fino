@@ -20,7 +20,7 @@ import { PageHero } from "@/components/marketing/page-hero";
 import { MARKETING_IMAGES } from "@/lib/authImages";
 
 const STEPS = [
-  { icon: UserPlus, title: "Create your account", description: "Sign up for Fino — every account automatically comes with its own referral link and code, no separate partner application needed." },
+  { icon: UserPlus, title: "Create your account", description: "Sign up for Zypherex — every account automatically comes with its own referral link and code, no separate partner application needed." },
   { icon: Link2, title: "Get your referral link", description: "Find your unique referral link and code on your Referrals page as soon as you're signed in." },
   { icon: Zap, title: "Share it", description: "Send your link through your website, social media, email, or personal network." },
   { icon: Wallet, title: "Earn commissions", description: "Once a referred signup's deposit is approved, a commission is credited straight to your balance — automatically." },
@@ -148,7 +148,7 @@ export default function AffiliatePage() {
             <div>
               <h2 className="font-heading text-2xl font-semibold tracking-tight">Who can become a partner?</h2>
               <p className="mt-3 text-sm text-muted-foreground">
-                Our referral program is open to anyone with a Fino account, including:
+                Our referral program is open to anyone with a Zypherex account, including:
               </p>
               <ul className="mt-6 grid gap-3 sm:grid-cols-2">
                 {WHO.map((who) => (

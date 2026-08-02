@@ -6,7 +6,7 @@ export default function TermsPage() {
       <section>
         <h2>1. Acceptance of terms</h2>
         <p>
-          By creating an account or using [Company Legal Name] (&quot;Fino,&quot; &quot;we,&quot;
+          By creating an account or using [Company Legal Name] (&quot;Zypherex,&quot; &quot;we,&quot;
           &quot;us&quot;) you agree to these Terms of Service. If you do not agree, do not use
           the service.
         </p>

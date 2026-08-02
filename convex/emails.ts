@@ -284,7 +284,7 @@ export const sendCronFailureAlert = internalAction({
     for (const admin of admins) {
       await deliverEmail(ctx, {
         to: admin.email,
-        subject: `[Fino] Cron failure: ${args.cronName}`,
+        subject: `[Zypherex] Cron failure: ${args.cronName}`,
         react: CronFailureAlertEmail({
           cronName: args.cronName,
           errorCount: args.errorCount,
@@ -331,7 +331,7 @@ export const sendContactMessageNotice = internalAction({
     for (const admin of admins) {
       await deliverEmail(ctx, {
         to: admin.email,
-        subject: `[Fino] New contact message: ${contactMessage.subject}`,
+        subject: `[Zypherex] New contact message: ${contactMessage.subject}`,
         react: ContactMessageEmail({
           name: contactMessage.name,
           email: contactMessage.email,

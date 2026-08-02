@@ -28,7 +28,7 @@ const FAQ_CATEGORIES: { category: string; items: { question: string; answer: str
       {
         question: "Which markets are supported?",
         answer:
-          "Fino currently supports investing in leading digital assets — BTC, ETH, USDT, USDC, and BNB — through our curated investment plans. We don't offer forex, commodities, or equities at this time.",
+          "Zypherex currently supports investing in leading digital assets — BTC, ETH, USDT, USDC, and BNB — through our curated investment plans. We don't offer forex, commodities, or equities at this time.",
       },
       {
         question: "Can beginners use the platform?",
