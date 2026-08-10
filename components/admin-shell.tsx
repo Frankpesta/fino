@@ -111,7 +111,7 @@ export function AdminShell({ email, children }: { email?: string; children: Reac
         </div>
 
         {renderNav(collapsed)}
-        <SidebarLogout email={email} collapsed={collapsed} />
+        <SidebarLogout email={email} collapsed={collapsed} redirectTo="/admin/login" />
       </aside>
 
       <Sheet open={mobileOpen} onOpenChange={(open) => setMobileOpen(open)}>
@@ -129,7 +129,7 @@ export function AdminShell({ email, children }: { email?: string; children: Reac
             </Link>
           </div>
           {renderNav(false, () => setMobileOpen(false))}
-          <SidebarLogout email={email} collapsed={false} />
+          <SidebarLogout email={email} collapsed={false} redirectTo="/admin/login" />
         </SheetContent>
       </Sheet>
 

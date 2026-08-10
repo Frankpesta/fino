@@ -16,11 +16,18 @@ function unsplash(id: string, params = "w=1800&q=80&auto=format&fit=crop") {
   return `https://images.unsplash.com/photo-${id}?${params}`;
 }
 
-export const AUTH_IMAGES: Record<"signIn" | "signUp" | "verifyEmail", AuthImage> = {
+export const AUTH_IMAGES: Record<"signIn" | "signUp" | "verifyEmail" | "adminLogin", AuthImage> = {
   signIn: {
     src: unsplash("1611974789855-9c2a0a7236a3"),
     alt: "Candlestick chart tracking live market price action",
     quote: "Every trade begins with the same discipline: analyze, verify, execute.",
+    attribution: "Zypherex",
+    credit: "Unsplash",
+  },
+  adminLogin: {
+    src: unsplash("1590283603385-17ffb3a7f29f"),
+    alt: "Dark control-room style dashboard with market data overlays",
+    quote: "Restricted console. Every action here is logged and audited.",
     attribution: "Zypherex",
     credit: "Unsplash",
   },

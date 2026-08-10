@@ -6,7 +6,15 @@ import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function SidebarLogout({ email, collapsed }: { email?: string; collapsed: boolean }) {
+export function SidebarLogout({
+  email,
+  collapsed,
+  redirectTo = "/sign-in",
+}: {
+  email?: string;
+  collapsed: boolean;
+  redirectTo?: string;
+}) {
   const { signOut } = useAuthActions();
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -14,7 +22,7 @@ export function SidebarLogout({ email, collapsed }: { email?: string; collapsed:
   async function handleSignOut() {
     setPending(true);
     await signOut();
-    router.push("/sign-in");
+    router.push(redirectTo);
   }
 
   return (

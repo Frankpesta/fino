@@ -2,7 +2,6 @@
 
 import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -12,8 +11,8 @@ import { Label } from "@/components/ui/label";
 import { AuthSplitLayout } from "@/components/auth-split-layout";
 import { AUTH_IMAGES } from "@/lib/authImages";
 
-export default function SignInPage() {
-  const { signIn } = useAuthActions();
+export default function AdminLoginPage() {
+  const { signIn, signOut } = useAuthActions();
   const router = useRouter();
   const user = useQuery(api.users.getCurrentUser);
   const [email, setEmail] = useState("");
@@ -24,18 +23,25 @@ export default function SignInPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Verification-based landing page, resolved once the reactive
-  // getCurrentUser query catches up after signIn() completes. Admins have
-  // their own dedicated entrance at /admin/login and are simply routed to
-  // the regular dashboard if they sign in here instead.
+  // Resolved once the reactive getCurrentUser query catches up after
+  // signIn() completes. Non-admin accounts are signed back out immediately --
+  // this route grants nothing beyond confirming a session exists.
   useEffect(() => {
-    if (!submitted || user === undefined || user === null) return;
-    if (!user.emailVerified) {
-      router.replace("/verify-email");
-    } else {
-      router.replace("/dashboard");
+    if (!submitted || user === undefined) return;
+    if (user === null) {
+      setSubmitted(false);
+      return;
     }
-  }, [submitted, user, router]);
+    if (user.role === "admin") {
+      router.replace("/admin");
+    } else {
+      signOut().finally(() => {
+        setSubmitted(false);
+        setIsSubmitting(false);
+        setError("This account does not have admin access.");
+      });
+    }
+  }, [submitted, user, router, signOut]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -58,21 +64,20 @@ export default function SignInPage() {
       } else {
         setError(message || "Invalid email or password");
       }
-    } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <AuthSplitLayout image={AUTH_IMAGES.signIn} eyebrow="Welcome back">
+    <AuthSplitLayout image={AUTH_IMAGES.adminLogin} eyebrow="Admin console">
       <div data-animate className="mb-10">
         <h1 className="font-heading text-3xl font-semibold tracking-tight">
-          {needs2FA ? "Enter your code" : "Sign in"}
+          {needs2FA ? "Enter your code" : "Admin sign in"}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
           {needs2FA
             ? "Enter the 6-digit code from your authenticator app."
-            : "Access your desk."}
+            : "Restricted access. Admin credentials only."}
         </p>
       </div>
 
@@ -106,15 +111,7 @@ export default function SignInPage() {
               />
             </div>
             <div data-animate className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-muted-foreground underline-offset-4 hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -157,15 +154,6 @@ export default function SignInPage() {
           </Button>
         )}
       </form>
-
-      {!needs2FA && (
-        <p data-animate className="mt-8 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link href="/sign-up" className="text-primary underline-offset-4 hover:underline">
-            Sign up
-          </Link>
-        </p>
-      )}
     </AuthSplitLayout>
   );
 }
