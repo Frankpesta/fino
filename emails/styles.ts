@@ -49,6 +49,7 @@ export const logo: CSSProperties = {
   display: "block",
   margin: "0 0 24px",
   borderRadius: 12,
+  objectFit: "cover",
 };
 
 export const heading: CSSProperties = {
