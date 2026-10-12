@@ -1,4 +1,4 @@
-import Script from "next/script";
+import { LiveChat } from "@/components/live-chat";
 
 export default function MarketingLayout({
   children,
@@ -8,7 +8,7 @@ export default function MarketingLayout({
   return (
     <>
       {children}
-      <Script id="chatway" strategy="lazyOnload" src="https://cdn.chatway.app/widget.js?id=WKFKBlnQ218D" />
+      <LiveChat />
     </>
   );
 }
