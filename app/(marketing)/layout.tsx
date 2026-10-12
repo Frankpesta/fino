@@ -9,7 +9,7 @@ export default function MarketingLayout({
     <>
       {children}
       <Script
-        id="smartsupp"
+        id="smartsupp-livechat"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `

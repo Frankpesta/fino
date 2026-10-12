@@ -20,7 +20,7 @@ export default async function UserLayout({ children }: { children: React.ReactNo
     <>
       <AppShell email={user.email}>{children}</AppShell>
       <Script
-        id="smartsupp"
+        id="smartsupp-livechat"
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
